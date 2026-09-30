@@ -1,10 +1,26 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 import { UserIdentity, GoogleAuthConfig } from './authTypes';
 
 export const authRouter = Router();
 
 const AUTH_COOKIE_NAME = 'fs_auth_session';
+
+function getGoogleClientId(): string {
+  if (process.env.GOOGLE_CLIENT_ID) return process.env.GOOGLE_CLIENT_ID;
+  try {
+    const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+    if (fs.existsSync(configPath)) {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.oAuthClientId) return config.oAuthClientId;
+    }
+  } catch (e) {
+    // fallback
+  }
+  return '';
+}
 
 // In-memory session store (sessionId -> UserIdentity)
 const userSessions = new Map<string, { user: UserIdentity; expiresAt: number }>();
@@ -74,18 +90,29 @@ authRouter.get('/me', (req: Request, res: Response) => {
   res.json({ isAuthenticated: true, user });
 });
 
+// GET /api/auth/config — Check client-side GIS and server OAuth configuration
+authRouter.get('/config', (req: Request, res: Response) => {
+  const clientId = getGoogleClientId();
+  res.json({
+    configured: !!clientId,
+    clientId,
+    serverRedirectConfigured: !!(clientId && process.env.GOOGLE_CLIENT_SECRET),
+  });
+});
+
 // 2. GET /api/auth/google/url — Initiate official Google OAuth
 authRouter.get('/google/url', (req: Request, res: Response) => {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientId = getGoogleClientId();
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
-  if (!clientId || !clientSecret) {
+  if (!clientId) {
     return res.status(200).json({
       configured: false,
-      message: 'Google authentication requires production OAuth configuration.',
+      message: 'Google authentication requires OAuth configuration.',
     });
   }
 
+  // If we have clientId, return client GIS capability
   const redirectUri = resolveGoogleRedirectUri(req);
   const state = crypto.randomBytes(16).toString('hex');
   const origin = req.get('referer') || `${req.protocol}://${req.get('host')}`;
@@ -106,7 +133,12 @@ authRouter.get('/google/url', (req: Request, res: Response) => {
   });
 
   const url = `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
-  res.json({ configured: true, url });
+  res.json({
+    configured: true,
+    clientId,
+    url,
+    serverRedirectConfigured: !!clientSecret,
+  });
 });
 
 // 3. GET /api/auth/google/callback — Google OAuth code exchange
@@ -198,7 +230,7 @@ authRouter.post('/google/verify', async (req: Request, res: Response) => {
       return res.status(401).json({ error: payload.error_description || 'Invalid Google token' });
     }
 
-    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientId = getGoogleClientId();
     if (clientId && payload.aud !== clientId) {
       return res.status(401).json({ error: 'Audience mismatch for Google token' });
     }

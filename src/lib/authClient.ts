@@ -12,15 +12,51 @@ export class AuthClient {
     }
   }
 
-  static async getGoogleAuthUrl(): Promise<{ configured: boolean; url?: string; message?: string }> {
-    const res = await fetch('/api/auth/google/url');
-    if (!res.ok) {
+  static async getConfig(): Promise<{ configured: boolean; clientId?: string; serverRedirectConfigured?: boolean }> {
+    try {
+      const res = await fetch('/api/auth/config');
+      if (!res.ok) return { configured: false };
+      return res.json();
+    } catch {
+      return { configured: false };
+    }
+  }
+
+  static async verifyGoogleToken(credential: string): Promise<{ success: boolean; user?: UserIdentity; error?: string }> {
+    try {
+      const res = await fetch('/api/auth/google/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential }),
+      });
+      return res.json();
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Network failure' };
+    }
+  }
+
+  static async getGoogleAuthUrl(): Promise<{
+    configured: boolean;
+    clientId?: string;
+    url?: string;
+    message?: string;
+    serverRedirectConfigured?: boolean;
+  }> {
+    try {
+      const res = await fetch('/api/auth/google/url');
+      if (!res.ok) {
+        return {
+          configured: false,
+          message: 'Google authentication requires OAuth configuration.',
+        };
+      }
+      return res.json();
+    } catch {
       return {
         configured: false,
-        message: 'Google authentication requires production OAuth configuration.',
+        message: 'Unable to reach authentication service.',
       };
     }
-    return res.json();
   }
 
   static async logout(): Promise<void> {

@@ -56,6 +56,7 @@ export default function App() {
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
   const [isLoadingVerified, setIsLoadingVerified] = useState(false);
 
   // OAuth notifications & Instagram live connection state
@@ -369,8 +370,8 @@ export default function App() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#FF3048] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#070A12] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#38BDF8] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -378,7 +379,7 @@ export default function App() {
   // If user is not logged in with Google, has not chosen guest mode, and has no data loaded:
   if (!currentUser && !isGuestMode && !hasData) {
     return (
-      <div className="min-h-screen bg-black text-[#F5F5F2] font-sans flex flex-col justify-center selection:bg-[#FF3048] selection:text-white">
+      <div className="min-h-screen bg-[#070A12] text-white font-sans flex flex-col justify-center selection:bg-[#F43F5E] selection:text-white">
         <LoginScreen
           onContinueAsGuestArchive={() => setIsGuestMode(true)}
           onOpenImport={() => {
@@ -390,6 +391,7 @@ export default function App() {
             handleLoadVerifiedArchive();
           }}
           isLoadingVerified={isLoadingVerified}
+          onUserAuthenticated={u => setCurrentUser(u)}
         />
         <ImportModal
           isOpen={isImportOpen}
@@ -402,7 +404,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-[#F5F5F2] font-sans flex flex-col selection:bg-[#FF3048] selection:text-white">
+    <div className="min-h-screen bg-[#070A12] text-white font-sans flex flex-col selection:bg-[#F43F5E] selection:text-white">
       {/* Modern Top Header */}
       <Header
         hasData={hasData}
@@ -422,17 +424,17 @@ export default function App() {
       {/* Global Notification Banner */}
       {oauthBanner && (
         <div
-          className={`w-full py-2.5 px-4 text-xs font-mono flex items-center justify-between border-b ${
+          className={`w-full py-3 px-4 text-xs font-mono font-bold flex items-center justify-between border-b-2 ${
             oauthBanner.type === 'success'
-              ? 'bg-[#0B2416] border-[#164227] text-[#2E9E60]'
-              : 'bg-[#2A0B0E] border-[#4A141A] text-[#FF3048]'
+              ? 'bg-[#064E3B] border-[#10B981] text-white'
+              : 'bg-[#4C0519] border-[#F43F5E] text-white'
           }`}
         >
           <div className="max-w-7xl mx-auto flex-1 flex items-center justify-between">
             <span>{oauthBanner.message}</span>
             <button
               onClick={() => setOauthBanner(null)}
-              className="ml-4 underline cursor-pointer"
+              className="ml-4 underline cursor-pointer hover:text-[#38BDF8]"
             >
               Dismiss
             </button>
@@ -453,11 +455,11 @@ export default function App() {
             />
           ) : (
             /* SCENE 02: MAIN APP SPLIT 3-COLUMN LAYOUT */
-            <div className="py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-              {/* LEFT COLUMN: RELATIONSHIP CATEGORIES SIDEBAR */}
-              <nav className="lg:col-span-3 font-mono text-xs border-b lg:border-b-0 lg:border-r border-[#1C1C1A] pb-4 lg:pb-0 lg:pr-6 flex lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1.5">
-                <span className="text-[10px] tracking-wider text-[#5F5F5B] uppercase hidden lg:block pb-2 font-bold">
-                  RELATIONSHIPS
+            <div className="py-6 sm:py-8 grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-start pb-28 md:pb-8">
+              {/* LEFT COLUMN: RELATIONSHIP CATEGORIES SIDEBAR (Visible on Tablet & Desktop) */}
+              <nav className="hidden md:flex md:col-span-4 lg:col-span-3 font-sans text-xs border border-white/[0.08] bg-[#141414] p-3 rounded-2xl shadow-xl flex-col gap-1 sticky top-20 min-w-0">
+                <span className="text-[11px] font-mono tracking-wider text-neutral-400 uppercase block px-3 py-1">
+                  Categories
                 </span>
 
                 <button
@@ -465,10 +467,10 @@ export default function App() {
                     setCurrentSection('OVERVIEW');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'OVERVIEW'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span>Overview</span>
@@ -476,17 +478,36 @@ export default function App() {
 
                 <button
                   onClick={() => {
+                    setCurrentSection('DONT_FOLLOW_BACK');
+                    setSelectedUsername(null);
+                  }}
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                    currentSection === 'DONT_FOLLOW_BACK'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <span className="mr-2">Don&apos;t follow back</span>
+                  <span className="font-mono text-xs tabular-nums text-red-400 font-semibold">
+                    {notFollowingBackCount}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
                     setCurrentSection('MUTUALS');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'MUTUALS'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <span className="mr-2">Mutuals</span>
-                  <span className="text-[11px] opacity-80">{mutualsCount}</span>
+                  <span className="mr-2">Mutual friends</span>
+                  <span className="font-mono text-xs tabular-nums text-emerald-400 font-semibold">
+                    {mutualsCount}
+                  </span>
                 </button>
 
                 <button
@@ -494,14 +515,16 @@ export default function App() {
                     setCurrentSection('FOLLOWERS');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'FOLLOWERS'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <span className="mr-2">Followers</span>
-                  <span className="text-[11px] opacity-80">{followersCount}</span>
+                  <span className="mr-2">All followers</span>
+                  <span className="font-mono text-xs tabular-nums text-white">
+                    {followersCount}
+                  </span>
                 </button>
 
                 <button
@@ -509,29 +532,16 @@ export default function App() {
                     setCurrentSection('FOLLOWING');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'FOLLOWING'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">Following</span>
-                  <span className="text-[11px] opacity-80">{followingCount}</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setCurrentSection('DONT_FOLLOW_BACK');
-                    setSelectedUsername(null);
-                  }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
-                    currentSection === 'DONT_FOLLOW_BACK'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
-                  }`}
-                >
-                  <span className="mr-2">Don&apos;t follow back</span>
-                  <span className="text-[11px] opacity-80">{notFollowingBackCount}</span>
+                  <span className="font-mono text-xs tabular-nums text-white">
+                    {followingCount}
+                  </span>
                 </button>
 
                 <button
@@ -539,44 +549,16 @@ export default function App() {
                     setCurrentSection('YOU_DONT_FOLLOW');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'YOU_DONT_FOLLOW'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <span className="mr-2">You don&apos;t follow</span>
-                  <span className="text-[11px] opacity-80">{youDontFollowCount}</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setCurrentSection('LOST');
-                    setSelectedUsername(null);
-                  }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
-                    currentSection === 'LOST'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
-                  }`}
-                >
-                  <span className="mr-2">Lost</span>
-                  <span className="text-[11px] opacity-80">{lostFollowers.length}</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setCurrentSection('REQUESTS');
-                    setSelectedUsername(null);
-                  }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
-                    currentSection === 'REQUESTS'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
-                  }`}
-                >
-                  <span className="mr-2">Requests</span>
-                  <span className="text-[11px] opacity-80">{pendingRequestsCount}</span>
+                  <span className="mr-2">Fans (You don&apos;t follow)</span>
+                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                    {youDontFollowCount}
+                  </span>
                 </button>
 
                 <button
@@ -584,19 +566,55 @@ export default function App() {
                     setCurrentSection('CLOSE_FRIENDS');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'CLOSE_FRIENDS'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">Close friends</span>
-                  <span className="text-[11px] opacity-80">{closeFriendsCount}</span>
+                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                    {closeFriendsCount}
+                  </span>
                 </button>
 
-                <div className="hidden lg:block pt-3 border-t border-[#1C1C1A] w-full mt-2">
-                  <span className="text-[10px] tracking-wider text-[#5F5F5B] uppercase block pb-2 font-bold">
-                    TEMPORAL FORENSICS
+                <button
+                  onClick={() => {
+                    setCurrentSection('LOST');
+                    setSelectedUsername(null);
+                  }}
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                    currentSection === 'LOST'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <span className="mr-2">Lost followers</span>
+                  <span className="font-mono text-xs tabular-nums text-red-400">
+                    {lostFollowers.length}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setCurrentSection('REQUESTS');
+                    setSelectedUsername(null);
+                  }}
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                    currentSection === 'REQUESTS'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                  }`}
+                >
+                  <span className="mr-2">Pending requests</span>
+                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                    {pendingRequestsCount}
+                  </span>
+                </button>
+
+                <div className="pt-3 border-t border-white/[0.08] w-full mt-2">
+                  <span className="text-[11px] font-mono tracking-wider text-neutral-400 uppercase block px-3 pb-1">
+                    Timeline & History
                   </span>
                 </div>
 
@@ -605,14 +623,16 @@ export default function App() {
                     setCurrentSection('TIMELINE');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'TIMELINE'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <span className="mr-2">Time machine</span>
-                  <span className="text-[11px] opacity-80">{appState.snapshots.length}</span>
+                  <span className="mr-2">Timeline</span>
+                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                    {appState.snapshots.length}
+                  </span>
                 </button>
 
                 <button
@@ -620,21 +640,23 @@ export default function App() {
                     setCurrentSection('HISTORY');
                     setSelectedUsername(null);
                   }}
-                  className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'HISTORY'
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
-                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
+                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
+                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">History</span>
-                  <span className="text-[11px] opacity-80">{appState.events.length}</span>
+                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                    {appState.events.length}
+                  </span>
                 </button>
               </nav>
 
               {/* CENTER COLUMN: MAIN DATA WORKSPACE */}
               <div
-                className={`lg:col-span-5 ${
-                  selectedUsername ? 'hidden md:block' : 'col-span-1'
+                className={`col-span-1 md:col-span-8 ${
+                  selectedUsername ? 'lg:col-span-5' : 'lg:col-span-9'
                 }`}
               >
                 {currentSection === 'OVERVIEW' && latestSnapshot && (
@@ -760,8 +782,8 @@ export default function App() {
                 )}
               </div>
 
-              {/* RIGHT COLUMN: CONTEXTUAL DETAIL PANE */}
-              <div className="lg:col-span-4 sticky top-18">
+              {/* RIGHT COLUMN: CONTEXTUAL DETAIL PANE (Desktop >= 1024px) */}
+              <div className="hidden lg:block lg:col-span-4 sticky top-20">
                 {selectedUsername ? (
                   <ProfileDetailPane
                     username={selectedUsername}
@@ -772,12 +794,12 @@ export default function App() {
                     onSaveNotes={handleSaveProfileNotes}
                   />
                 ) : (
-                  <div className="hidden lg:block p-8 bg-[#050505] border border-dashed border-[#1C1C1A] rounded-2xl text-center space-y-2">
-                    <p className="font-mono text-xs uppercase tracking-wider text-[#5F5F5B] font-bold">
-                      FORENSIC INSPECTOR
+                  <div className="p-8 bg-[#12141D] border border-white/[0.08] rounded-2xl text-center space-y-2">
+                    <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
+                      Account Inspector
                     </p>
-                    <p className="text-xs text-[#5F5F5B] font-sans">
-                      Select any account to inspect relationship provenance and add private notes.
+                    <p className="text-xs text-slate-500 font-sans leading-relaxed">
+                      Select any account in the list to view their follower history, relationship details, and add private notes.
                     </p>
                   </div>
                 )}
@@ -786,6 +808,235 @@ export default function App() {
           )}
         </main>
       </ErrorBoundary>
+
+      {/* Mobile Slide-Up Account Details Sheet (Screens < 1024px) */}
+      {selectedUsername && (
+        <div
+          className="lg:hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          onClick={() => setSelectedUsername(null)}
+        >
+          <div
+            className="w-full sm:max-w-md bg-[#141414] border-t sm:border border-white/[0.12] rounded-t-3xl sm:rounded-2xl max-h-[88vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up min-w-0"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto my-3 sm:hidden" />
+            <ProfileDetailPane
+              username={selectedUsername}
+              onClose={() => setSelectedUsername(null)}
+              snapshots={appState.snapshots}
+              events={appState.events}
+              profile={appState.profiles[selectedUsername.toLowerCase()]}
+              onSaveNotes={handleSaveProfileNotes}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Native Bottom Navigation Bar (Screens < 768px when data exists) */}
+      {hasData && (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-white/[0.08] px-2 py-2 flex items-center justify-around shadow-2xl safe-area-bottom">
+          <button
+            onClick={() => {
+              setCurrentSection('OVERVIEW');
+              setSelectedUsername(null);
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 ${
+              currentSection === 'OVERVIEW' ? 'text-white' : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span className="text-base leading-none">📊</span>
+            <span className="text-[10px] font-semibold mt-1">Overview</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setCurrentSection('DONT_FOLLOW_BACK');
+              setSelectedUsername(null);
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 relative ${
+              currentSection === 'DONT_FOLLOW_BACK' ? 'text-red-400' : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span className="text-base leading-none">💔</span>
+            <span className="text-[10px] font-semibold mt-1">Unfollowers</span>
+            {notFollowingBackCount > 0 && (
+              <span className="absolute top-0 right-2 bg-red-600 text-white font-mono text-[9px] font-bold px-1.5 rounded-full">
+                {notFollowingBackCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              setCurrentSection('MUTUALS');
+              setSelectedUsername(null);
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 relative ${
+              currentSection === 'MUTUALS' ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span className="text-base leading-none">👥</span>
+            <span className="text-[10px] font-semibold mt-1">Mutuals</span>
+            {mutualsCount > 0 && (
+              <span className="absolute top-0 right-2 bg-emerald-600 text-white font-mono text-[9px] font-bold px-1.5 rounded-full">
+                {mutualsCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            onClick={() => {
+              setCurrentSection('TIMELINE');
+              setSelectedUsername(null);
+            }}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 ${
+              currentSection === 'TIMELINE' ? 'text-white' : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            <span className="text-base leading-none">⏳</span>
+            <span className="text-[10px] font-semibold mt-1">Timeline</span>
+          </button>
+
+          <button
+            onClick={() => setIsMobileMoreOpen(true)}
+            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 text-neutral-400 hover:text-white"
+          >
+            <span className="text-base leading-none">☰</span>
+            <span className="text-[10px] font-semibold mt-1">More</span>
+          </button>
+        </nav>
+      )}
+
+      {/* Mobile More Sheet */}
+      {isMobileMoreOpen && (
+        <div
+          className="md:hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end justify-center animate-fade-in"
+          onClick={() => setIsMobileMoreOpen(false)}
+        >
+          <div
+            className="w-full bg-[#141414] border-t border-white/[0.12] rounded-t-3xl p-5 space-y-4 shadow-2xl animate-slide-up min-w-0"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-2" />
+            <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+              <span className="font-semibold text-sm text-white">All Categories</span>
+              <button
+                onClick={() => setIsMobileMoreOpen(false)}
+                className="text-xs text-neutral-400 hover:text-white p-1"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-xs font-medium">
+              <button
+                onClick={() => {
+                  setCurrentSection('FOLLOWERS');
+                  setSelectedUsername(null);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+              >
+                <span>Followers</span>
+                <span className="font-mono text-neutral-400">{followersCount}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentSection('FOLLOWING');
+                  setSelectedUsername(null);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+              >
+                <span>Following</span>
+                <span className="font-mono text-neutral-400">{followingCount}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentSection('YOU_DONT_FOLLOW');
+                  setSelectedUsername(null);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+              >
+                <span>Fans</span>
+                <span className="font-mono text-neutral-400">{youDontFollowCount}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentSection('CLOSE_FRIENDS');
+                  setSelectedUsername(null);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+              >
+                <span>Close Friends</span>
+                <span className="font-mono text-neutral-400">{closeFriendsCount}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentSection('LOST');
+                  setSelectedUsername(null);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+              >
+                <span>Lost</span>
+                <span className="font-mono text-red-400">{lostFollowers.length}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentSection('REQUESTS');
+                  setSelectedUsername(null);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+              >
+                <span>Requests</span>
+                <span className="font-mono text-neutral-400">{pendingRequestsCount}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setCurrentSection('HISTORY');
+                  setSelectedUsername(null);
+                  setIsMobileMoreOpen(false);
+                }}
+                className="col-span-2 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+              >
+                <span>History Log</span>
+                <span className="font-mono text-neutral-400">{appState.events.length} records</span>
+              </button>
+            </div>
+
+            <div className="pt-2 flex items-center justify-between border-t border-white/[0.08]">
+              <button
+                onClick={() => {
+                  setIsMobileMoreOpen(false);
+                  setIsSettingsOpen(true);
+                }}
+                className="text-xs text-neutral-300 hover:text-white"
+              >
+                ⚙ Settings & Storage
+              </button>
+              <button
+                onClick={() => {
+                  setIsMobileMoreOpen(false);
+                  setIsAboutOpen(true);
+                }}
+                className="text-xs text-neutral-400 hover:text-white"
+              >
+                About Follow Signal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       <ImportModal

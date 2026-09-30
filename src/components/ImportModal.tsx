@@ -11,6 +11,8 @@ interface ImportModalProps {
   onImportComplete: (newSnapshot: Snapshot, newEvents: RelationshipEvent[]) => void;
 }
 
+const MAX_ARCHIVE_SIZE_BYTES = 100 * 1024 * 1024; // 100 MB safety limit
+
 export const ImportModal: React.FC<ImportModalProps> = ({
   isOpen,
   onClose,
@@ -28,22 +30,28 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   if (!isOpen) return null;
 
   const processFile = async (fileOrBlob: File | Blob, fileName: string) => {
+    // Security check: File size limit to prevent memory exhaustion
+    if (fileOrBlob.size > MAX_ARCHIVE_SIZE_BYTES) {
+      setErrorMsg(`Archive exceeds maximum supported size (100 MB). Size was ${(fileOrBlob.size / (1024 * 1024)).toFixed(1)} MB.`);
+      return;
+    }
+
     setIsProcessing(true);
     setErrorMsg(null);
     setCurrentStage('READING');
-    setStageDescription('Reading archive in browser memory...');
+    setStageDescription('Reading archive in browser memory sandbox...');
 
     try {
       const parseResult = await parseUploadedExport(fileOrBlob, (msg, pct) => {
         if (pct < 40) {
           setCurrentStage('PARSING');
-          setStageDescription('Decompressing and parsing JSON relationship files...');
+          setStageDescription('Decompressing archive and indexing relationship files...');
         } else if (pct < 80) {
           setCurrentStage('RESOLVING');
-          setStageDescription('Executing mathematical set operations (mutuals, unreciprocated)...');
+          setStageDescription('Calculating set differences (mutual bonds, unreciprocated following)...');
         } else {
           setCurrentStage('BUILDING');
-          setStageDescription('Compiling verified snapshot and metadata...');
+          setStageDescription('Finalizing snapshot and compiling verified state...');
         }
       });
 
@@ -147,80 +155,47 @@ export const ImportModal: React.FC<ImportModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-xl bg-[#0A0A0A] border border-[#1C1C1A] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-7 text-[#F5F5F2]"
+        className="w-full max-w-lg bg-[#141414] border border-white/[0.08] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 text-white min-w-0"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#1C1C1A] pb-4">
-          <div className="flex items-center space-x-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#FF3048]" />
-            <span className="text-xs font-mono tracking-widest text-[#9A9A96] uppercase">
-              LOCAL ARCHIVE INGESTION
-            </span>
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+          <div className="text-xs font-mono tracking-wider text-neutral-400 uppercase">
+            Archive Import
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-[#5F5F5B] hover:text-[#F5F5F2] transition cursor-pointer"
+            className="text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer p-1"
           >
-            [Close]
+            &times; Close
           </button>
         </div>
 
-        {/* Process Stages Indicator */}
-        <div className="grid grid-cols-4 gap-1.5 text-center font-mono text-[10px]">
-          <div
-            className={`p-2 rounded border ${
-              currentStage === 'READING'
-                ? 'bg-[#141414] border-[#FF3048] text-[#F5F5F2]'
-                : currentStage !== 'IDLE'
-                ? 'bg-[#050505] border-[#1C1C1A] text-[#2E9E60]'
-                : 'bg-[#050505] border-[#141414] text-[#5F5F5B]'
-            }`}
-          >
-            01 READ
+        {/* Process Stages Strip */}
+        <div className="grid grid-cols-4 gap-2 text-center font-mono text-xs border-b border-white/[0.08] pb-4">
+          <div className={currentStage === 'READING' ? 'text-white font-bold' : currentStage !== 'IDLE' ? 'text-neutral-300' : 'text-neutral-600'}>
+            01. Read
           </div>
-          <div
-            className={`p-2 rounded border ${
-              currentStage === 'PARSING'
-                ? 'bg-[#141414] border-[#FF3048] text-[#F5F5F2]'
-                : currentStage === 'RESOLVING' || currentStage === 'BUILDING'
-                ? 'bg-[#050505] border-[#1C1C1A] text-[#2E9E60]'
-                : 'bg-[#050505] border-[#141414] text-[#5F5F5B]'
-            }`}
-          >
-            02 PARSE
+          <div className={currentStage === 'PARSING' ? 'text-white font-bold' : currentStage === 'RESOLVING' || currentStage === 'BUILDING' ? 'text-neutral-300' : 'text-neutral-600'}>
+            02. Parse
           </div>
-          <div
-            className={`p-2 rounded border ${
-              currentStage === 'RESOLVING'
-                ? 'bg-[#141414] border-[#FF3048] text-[#F5F5F2]'
-                : currentStage === 'BUILDING'
-                ? 'bg-[#050505] border-[#1C1C1A] text-[#2E9E60]'
-                : 'bg-[#050505] border-[#141414] text-[#5F5F5B]'
-            }`}
-          >
-            03 RESOLVE
+          <div className={currentStage === 'RESOLVING' ? 'text-white font-bold' : currentStage === 'BUILDING' ? 'text-neutral-300' : 'text-neutral-600'}>
+            03. Resolve
           </div>
-          <div
-            className={`p-2 rounded border ${
-              currentStage === 'BUILDING'
-                ? 'bg-[#141414] border-[#FF3048] text-[#F5F5F2]'
-                : 'bg-[#050505] border-[#141414] text-[#5F5F5B]'
-            }`}
-          >
-            04 SNAPSHOT
+          <div className={currentStage === 'BUILDING' ? 'text-white font-bold' : 'text-neutral-600'}>
+            04. Snapshot
           </div>
         </div>
 
-        {/* Drag & Drop Target or Active Processing View */}
+        {/* Ingestion Target or Active Processing View */}
         {isProcessing ? (
-          <div className="py-14 text-center space-y-4 bg-[#050505] border border-[#1C1C1A] rounded-xl p-6">
-            <div className="w-7 h-7 border-2 border-[#FF3048] border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="py-14 text-center space-y-4 bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
             <div className="space-y-1">
-              <p className="text-xs font-mono font-bold text-[#F5F5F2] uppercase">
-                Executing Local Analysis
+              <p className="text-xs font-mono font-medium text-white uppercase tracking-wider">
+                In-Browser Processing
               </p>
-              <p className="text-xs font-sans text-[#9A9A96]">
+              <p className="text-xs font-sans text-neutral-400">
                 {stageDescription}
               </p>
             </div>
@@ -231,10 +206,10 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`py-12 px-6 border-2 border-dashed rounded-2xl text-center cursor-pointer transition ${
+            className={`py-12 px-6 border border-dashed rounded-xl text-center cursor-pointer transition ${
               isDragging
-                ? 'border-[#FF3048] bg-[#141414]'
-                : 'border-[#1C1C1A] hover:border-[#262624] bg-[#050505]'
+                ? 'border-white bg-neutral-900'
+                : 'border-neutral-700 hover:border-neutral-500 bg-neutral-950'
             }`}
           >
             <input
@@ -244,13 +219,12 @@ export const ImportModal: React.FC<ImportModalProps> = ({
               accept=".zip,.json,.html,.csv"
               className="hidden"
             />
-            <div className="space-y-2.5">
-              <div className="text-2xl font-mono text-[#5F5F5B]">↓</div>
-              <p className="text-sm font-sans font-semibold text-[#F5F5F2]">
-                Select Instagram Export ZIP or JSON
+            <div className="space-y-2">
+              <p className="text-sm font-sans font-medium text-white">
+                Select your Instagram export (ZIP or JSON)
               </p>
-              <p className="text-xs font-sans text-[#5F5F5B]">
-                Drag and drop your file here, or click to browse.
+              <p className="text-xs font-sans text-neutral-500">
+                Drag and drop here, or click to browse. Max 100 MB.
               </p>
             </div>
           </div>
@@ -258,21 +232,21 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
         {/* Error Message if Any */}
         {errorMsg && (
-          <div className="p-3.5 bg-[#2A0B0E] border border-[#4A141A] rounded-xl text-xs font-sans text-[#FF3048] text-left">
+          <div className="p-3 bg-red-950/40 border border-red-500/40 rounded-lg text-xs font-sans text-red-300 text-left">
             {errorMsg}
           </div>
         )}
 
-        {/* Instructions & Secondary Options */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-[#5F5F5B]">
-          <span>Supports: ZIP, JSON, HTML, CSV</span>
+        {/* Footer Actions */}
+        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-neutral-400">
+          <span>Formats: ZIP, JSON, HTML, CSV</span>
 
           <button
             onClick={handleLoadBaselineFixture}
             disabled={isProcessing}
-            className="hover:text-[#9A9A96] underline cursor-pointer disabled:opacity-50"
+            className="text-white hover:underline transition cursor-pointer disabled:opacity-50"
           >
-            Load verified sample (163 accounts) →
+            Load sample dataset (163 accounts) &rarr;
           </button>
         </div>
       </div>

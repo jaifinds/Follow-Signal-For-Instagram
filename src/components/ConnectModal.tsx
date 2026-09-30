@@ -68,14 +68,14 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
         setIsUnavailable(true);
         setUnavailableMessage(
           auth.message ||
-            'Instagram connection is temporarily unavailable. You can still import your Instagram archive.'
+            'Instagram connection is currently in developer sandbox mode. Use archive import for full analysis.'
         );
       }
     } catch {
       setConnecting(false);
       setIsUnavailable(true);
       setUnavailableMessage(
-        'Instagram connection is temporarily unavailable. You can still import your Instagram archive.'
+        'Instagram service unreachable. Use archive import for full analysis.'
       );
     }
   };
@@ -121,42 +121,36 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md bg-[#0A0A0A] border border-[#1C1C1A] rounded-2xl shadow-2xl p-6 sm:p-7 space-y-6 text-[#F5F5F2]"
+        className="w-full max-w-md bg-[#141414] border border-white/[0.08] rounded-2xl shadow-2xl p-6 sm:p-7 space-y-5 text-white min-w-0"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#1C1C1A] pb-3.5">
-          <div className="flex items-center space-x-2">
-            <span className="w-2 h-2 rounded-full bg-[#FF3048]" />
-            <span className="text-xs font-mono font-bold tracking-wider text-[#9A9A96] uppercase">
-              INSTAGRAM CONNECTION
-            </span>
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
+          <div className="text-xs font-mono tracking-wider text-neutral-400 uppercase">
+            Instagram Connection
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-[#5F5F5B] hover:text-[#F5F5F2] transition cursor-pointer"
+            className="text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer p-1"
           >
-            [Close]
+            &times; Close
           </button>
         </div>
 
         {loading ? (
           <div className="py-12 text-center space-y-3">
-            <div className="w-6 h-6 border-2 border-[#FF3048] border-t-transparent rounded-full animate-spin mx-auto" />
-            <p className="text-xs font-mono text-[#5F5F5B]">Checking connection status...</p>
+            <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
+            <p className="text-xs font-mono text-neutral-400">Checking connection status...</p>
           </div>
         ) : isUnavailable ? (
           <div className="space-y-4 py-2">
             <div className="space-y-2 text-center">
-              <div className="w-10 h-10 rounded-full bg-[#2A0B0E] border border-[#4A141A] mx-auto flex items-center justify-center text-sm text-[#FF3048]">
-                !
-              </div>
-              <h3 className="text-base font-sans font-bold text-[#F5F5F2]">
-                Instagram connection is temporarily unavailable.
+              <h3 className="text-base font-semibold text-white">
+                Archive Import Available
               </h3>
-              <p className="text-xs text-[#9A9A96] leading-relaxed max-w-sm mx-auto">
+              <p className="text-xs text-neutral-400 leading-relaxed max-w-sm mx-auto">
                 {unavailableMessage ||
-                  'You can still import your Instagram archive for complete relationship analysis.'}
+                  'You can import your Instagram archive for complete relationship and unfollower analysis.'}
               </p>
             </div>
 
@@ -166,69 +160,68 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   onClose();
                   onOpenImport();
                 }}
-                className="w-full py-3 px-4 bg-[#F5F5F2] hover:bg-white text-black text-xs font-sans font-semibold rounded-xl transition cursor-pointer text-center"
+                className="w-full py-2.5 px-4 bg-white hover:bg-neutral-200 text-black text-xs font-semibold rounded-lg transition cursor-pointer text-center"
               >
-                Import archive instead
+                Import Archive Instead &rarr;
               </button>
               <button
                 onClick={handleStartOAuth}
-                className="w-full py-2.5 px-4 text-[#5F5F5B] hover:text-[#F5F5F2] text-xs font-mono transition cursor-pointer text-center"
+                className="w-full py-2 px-4 text-neutral-400 hover:text-white bg-white/[0.04] rounded-lg text-xs font-mono transition cursor-pointer text-center"
               >
-                Try again
+                Try Direct Connect Again
               </button>
             </div>
           </div>
         ) : connection?.connected && connection.account ? (
           /* Connected State */
-          <div className="space-y-5">
-            <div className="p-4 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-4">
-              <div className="flex items-center space-x-3.5">
+          <div className="space-y-4">
+            <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl space-y-3">
+              <div className="flex items-center space-x-3">
                 {connection.account.profilePictureUrl ? (
                   <img
                     src={connection.account.profilePictureUrl}
                     alt={connection.account.username}
-                    className="w-12 h-12 rounded-full border border-[#262624] object-cover"
+                    className="w-9 h-9 rounded-full border border-emerald-500 object-cover"
                   />
                 ) : (
-                  <div className="w-12 h-12 rounded-full bg-[#141414] border border-[#262624] text-[#F5F5F2] flex items-center justify-center font-bold text-sm font-mono">
+                  <div className="w-9 h-9 rounded-full bg-neutral-800 text-white flex items-center justify-center font-bold text-xs font-mono">
                     {connection.account.username.slice(0, 2).toUpperCase()}
                   </div>
                 )}
                 <div>
-                  <div className="flex items-center space-x-1.5">
-                    <h3 className="text-base font-bold text-[#F5F5F2] font-mono">
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-sm font-semibold text-white font-mono">
                       @{connection.account.username}
                     </h3>
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#2E9E60]" />
+                    <span className="text-[10px] font-mono text-emerald-400">
+                      Connected
+                    </span>
                   </div>
-                  <p className="text-xs text-[#9A9A96]">
+                  <p className="text-xs text-neutral-500">
                     {connection.account.accountType || 'Professional Account'}
-                  </p>
-                  <p className="text-[10px] font-mono text-[#5F5F5B] mt-0.5">
-                    Last synced: {new Date(connection.account.lastSynced).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
 
               {/* Verified Metrics */}
-              <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#1C1C1A] text-center font-mono">
-                <div className="bg-[#0A0A0A] p-2 rounded-lg border border-[#141414]">
-                  <div className="text-sm font-bold text-[#F5F5F2]">
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-neutral-800 text-center font-mono">
+                <div>
+                  <div className="text-sm font-bold text-white tabular-nums">
                     {connection.account.followersCount.toLocaleString()}
                   </div>
-                  <div className="text-[10px] text-[#5F5F5B]">Followers</div>
+                  <div className="text-[10px] text-neutral-500">Followers</div>
                 </div>
-                <div className="bg-[#0A0A0A] p-2 rounded-lg border border-[#141414]">
-                  <div className="text-sm font-bold text-[#F5F5F2]">
+                <div>
+                  <div className="text-sm font-bold text-white tabular-nums">
                     {connection.account.followsCount.toLocaleString()}
                   </div>
-                  <div className="text-[10px] text-[#5F5F5B]">Following</div>
+                  <div className="text-[10px] text-neutral-500">Following</div>
                 </div>
-                <div className="bg-[#0A0A0A] p-2 rounded-lg border border-[#141414]">
-                  <div className="text-sm font-bold text-[#F5F5F2]">
+                <div>
+                  <div className="text-sm font-bold text-white tabular-nums">
                     {connection.account.mediaCount.toLocaleString()}
                   </div>
-                  <div className="text-[10px] text-[#5F5F5B]">Media</div>
+                  <div className="text-[10px] text-neutral-500">Media</div>
                 </div>
               </div>
             </div>
@@ -238,22 +231,22 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               <button
                 onClick={handleSyncLatest}
                 disabled={syncing}
-                className="w-full py-2.5 px-4 bg-[#F5F5F2] hover:bg-white text-black text-xs font-sans font-semibold rounded-xl transition cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 px-4 bg-white text-black font-semibold text-xs rounded-lg transition cursor-pointer disabled:opacity-50 hover:bg-neutral-200"
               >
-                {syncing ? 'Syncing...' : 'Sync latest metrics'}
+                {syncing ? 'Syncing...' : 'Sync Latest Metrics'}
               </button>
 
               {confirmDisconnect ? (
                 <div className="flex items-center space-x-2 pt-1">
                   <button
                     onClick={handleDisconnect}
-                    className="flex-1 py-2 px-3 bg-[#FF3048] hover:bg-[#E62E40] text-white text-xs font-sans rounded-xl cursor-pointer"
+                    className="flex-1 py-2 px-3 bg-red-600 text-white text-xs font-medium rounded-lg cursor-pointer"
                   >
-                    Confirm disconnect
+                    Confirm Disconnect
                   </button>
                   <button
                     onClick={() => setConfirmDisconnect(false)}
-                    className="py-2 px-3 border border-[#262624] text-[#9A9A96] text-xs font-sans rounded-xl cursor-pointer"
+                    className="py-2 px-3 bg-neutral-800 text-white text-xs rounded-lg cursor-pointer"
                   >
                     Cancel
                   </button>
@@ -261,32 +254,32 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
               ) : (
                 <button
                   onClick={() => setConfirmDisconnect(true)}
-                  className="w-full py-2.5 px-4 text-[#FF3048] hover:bg-[#2A0B0E] text-xs font-sans font-medium rounded-xl transition cursor-pointer"
+                  className="w-full py-2 px-4 text-red-400 hover:underline text-xs font-mono transition cursor-pointer text-center"
                 >
-                  Disconnect account
+                  Disconnect Account
                 </button>
               )}
             </div>
           </div>
         ) : (
           /* Not Connected State */
-          <div className="space-y-5 py-2">
+          <div className="space-y-4 py-2">
             <div className="space-y-2 text-center">
-              <h3 className="text-lg font-sans font-bold text-[#F5F5F2] tracking-tight">
-                Connect your Instagram
+              <h3 className="text-base font-semibold text-white">
+                Direct Instagram Sync
               </h3>
-              <p className="text-xs text-[#9A9A96] leading-relaxed max-w-sm mx-auto">
-                Authorize directly with Instagram to sync verified account totals and confirm official ownership.
+              <p className="text-xs text-neutral-400 leading-relaxed max-w-sm mx-auto">
+                Authorize directly with Instagram to confirm official account metrics and ownership.
               </p>
             </div>
 
-            <div className="pt-2 space-y-2.5">
+            <div className="pt-2 space-y-2">
               <button
                 onClick={handleStartOAuth}
                 disabled={connecting}
-                className="w-full py-3.5 px-5 bg-[#F5F5F2] hover:bg-white text-black text-xs font-sans font-semibold tracking-wider uppercase rounded-xl transition cursor-pointer text-center disabled:opacity-50 shadow-sm"
+                className="w-full py-2.5 px-5 bg-white hover:bg-neutral-200 text-black text-xs font-semibold rounded-lg transition cursor-pointer text-center disabled:opacity-50"
               >
-                {connecting ? 'Redirecting to Instagram...' : 'Connect Instagram'}
+                {connecting ? 'Redirecting...' : 'Connect With Instagram'}
               </button>
 
               <button
@@ -294,14 +287,14 @@ export const ConnectModal: React.FC<ConnectModalProps> = ({
                   onClose();
                   onOpenImport();
                 }}
-                className="w-full py-2.5 px-4 border border-[#1C1C1A] hover:bg-[#141414] hover:border-[#262624] text-[#F5F5F2] text-xs font-sans font-medium rounded-xl transition cursor-pointer text-center"
+                className="w-full py-2.5 px-4 bg-transparent hover:bg-white/[0.04] border border-white/[0.1] text-white text-xs font-medium rounded-lg transition cursor-pointer text-center"
               >
-                Import archive instead
+                Import Archive Instead
               </button>
             </div>
 
-            <p className="text-[11px] text-[#5F5F5B] font-mono text-center pt-1 leading-relaxed">
-              Meta Graph API provides aggregate totals. For granular individual follower rosters, use Archive Import.
+            <p className="text-[11px] text-neutral-500 font-mono text-center pt-1 leading-relaxed">
+              Meta Graph API provides verified totals. For individual unfollower handles, use Archive Import.
             </p>
           </div>
         )}

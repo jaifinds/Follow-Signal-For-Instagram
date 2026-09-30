@@ -44,127 +44,123 @@ export const ProfileDetailPane: React.FC<ProfileDetailPaneProps> = ({
   );
 
   return (
-    <aside className="w-full lg:w-96 bg-[#080808] border-t lg:border-t-0 lg:border-l border-[#1C1C1A] flex flex-col h-full animate-fade-in text-[#F5F5F2] select-none">
-      {/* Dossier Header */}
-      <div className="p-5 border-b border-[#1C1C1A] flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <span className="w-2 h-2 rounded-full bg-[#FF3048]" />
-          <span className="text-[11px] font-mono tracking-widest text-[#5F5F5B] uppercase">
-            FORENSIC DOSSIER
-          </span>
+    <aside className="w-full bg-[#141414] border border-white/[0.08] rounded-2xl flex flex-col h-full animate-fade-in text-white select-none overflow-hidden shadow-2xl min-w-0">
+      {/* Pane Header */}
+      <div className="p-4 border-b border-white/[0.08] flex items-center justify-between min-w-0">
+        <div className="text-xs font-mono tracking-wider text-neutral-400 uppercase truncate">
+          Account Details
         </div>
         <button
           onClick={onClose}
-          className="text-xs font-mono text-[#5F5F5B] hover:text-[#F5F5F2] transition cursor-pointer"
+          className="text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer p-1"
         >
-          [Close]
+          &times; Close
         </button>
       </div>
 
-      <div className="p-6 space-y-7 overflow-y-auto flex-1">
+      <div className="p-5 space-y-5 overflow-y-auto flex-1 min-w-0">
         {/* Account Identity */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-2xl font-mono font-bold text-[#F5F5F2] tracking-tight">
+        <div className="space-y-1.5 min-w-0">
+          <div className="flex items-center justify-between min-w-0">
+            <h3 className="text-xl sm:text-2xl font-mono font-bold text-white tracking-tight truncate">
               @{username}
             </h3>
 
             {onToggleStar && (
               <button
                 onClick={() => onToggleStar(username)}
-                className="text-lg transition cursor-pointer p-1"
-                title={profile?.isStarred ? 'Unstar profile' : 'Star profile'}
+                className="w-8 h-8 rounded-lg border border-white/[0.08] hover:border-white/[0.2] flex items-center justify-center transition cursor-pointer shrink-0 ml-2"
+                title={profile?.isStarred ? 'Unstar' : 'Star'}
               >
-                <span className={profile?.isStarred ? 'text-[#FF3048]' : 'text-[#262624] hover:text-[#5F5F5B]'}>
+                <span className={profile?.isStarred ? 'text-amber-400' : 'text-neutral-500'}>
                   ★
                 </span>
               </button>
             )}
           </div>
 
-          <div className="inline-flex items-center px-2.5 py-1 rounded bg-[#0D0D0D] border border-[#1C1C1A] text-[10px] font-mono uppercase tracking-wider text-[#9A9A96]">
-            {relationshipStatus}
+          <div className="text-xs text-neutral-400 truncate">
+            Status: <span className="text-white font-medium">{relationshipStatus}</span>
           </div>
         </div>
 
-        {/* Forensic Metadata Strip */}
-        <div className="grid grid-cols-2 gap-2 text-xs font-mono border-t border-b border-[#1C1C1A] py-4">
-          <div className="p-3 bg-[#050505] rounded-lg border border-[#141414]">
-            <span className="text-[10px] text-[#5F5F5B] block uppercase">First Observed</span>
-            <span className="text-[#F5F5F2] mt-0.5 block">
+        {/* Action Button: Direct Open on Instagram */}
+        <div>
+          <a
+            href={`https://instagram.com/${username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-2.5 px-4 bg-white text-black font-semibold rounded-lg text-xs flex items-center justify-center space-x-2 transition hover:bg-neutral-200 active:scale-95"
+          >
+            <span>Open @{username} on Instagram</span>
+            <span>&rarr;</span>
+          </a>
+        </div>
+
+        {/* Account Metadata */}
+        <div className="grid grid-cols-2 gap-3 text-xs border-t border-b border-white/[0.08] py-3.5">
+          <div>
+            <span className="text-[10px] font-mono text-neutral-500 block uppercase">First Seen</span>
+            <span className="text-white font-medium mt-0.5 block font-mono text-xs">
               {profile?.firstSeenAt
                 ? new Date(profile.firstSeenAt).toISOString().split('T')[0]
-                : 'Current Baseline'}
+                : 'Current Snapshot'}
             </span>
           </div>
 
-          <div className="p-3 bg-[#050505] rounded-lg border border-[#141414]">
-            <span className="text-[10px] text-[#5F5F5B] block uppercase">Recorded Changes</span>
-            <span className="text-[#F5F5F2] mt-0.5 block">
-              {accountEvents.length} {accountEvents.length === 1 ? 'event' : 'events'}
+          <div>
+            <span className="text-[10px] font-mono text-neutral-500 block uppercase">Log Events</span>
+            <span className="text-white font-medium mt-0.5 block font-mono text-xs">
+              {accountEvents.length} {accountEvents.length === 1 ? 'record' : 'records'}
             </span>
           </div>
         </div>
 
         {/* Private Local Notes */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-[11px] font-mono uppercase text-[#5F5F5B] tracking-wider">
-              Private Dossier Notes
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-xs">
+            <label className="text-neutral-400 font-medium">
+              Private Note (Saved locally)
             </label>
             {savingNotes && (
-              <span className="text-[10px] font-mono text-[#2E9E60]">Saved</span>
+              <span className="text-emerald-400 font-mono text-[11px]">Saved</span>
             )}
           </div>
           <textarea
             value={notes}
             onChange={e => setNotes(e.target.value)}
             onBlur={handleNotesBlur}
-            placeholder="Add private observations (stored locally on this device)..."
+            placeholder="Add a private note about this person..."
             rows={3}
-            className="w-full bg-[#050505] border border-[#1C1C1A] focus:border-[#FF3048] rounded-xl p-3 text-xs font-mono text-[#F5F5F2] focus:outline-none placeholder-[#3A3A36] transition resize-none"
+            className="w-full bg-[#0A0A0A] border border-white/[0.08] focus:border-white/[0.2] rounded-lg p-2.5 text-xs text-white focus:outline-none placeholder-neutral-600 transition resize-none"
           />
         </div>
 
-        {/* Recorded Event History */}
-        <div className="space-y-3">
-          <label className="text-[11px] font-mono uppercase text-[#5F5F5B] tracking-wider block">
-            State Transitions
-          </label>
+        {/* Activity Log */}
+        <div className="space-y-2.5">
+          <div className="text-xs font-mono text-neutral-400 uppercase tracking-wider">
+            Activity Log
+          </div>
 
           {accountEvents.length > 0 ? (
-            <div className="space-y-2">
+            <div className="space-y-2 divide-y divide-white/[0.04]">
               {accountEvents.map((evt, i) => (
-                <div
-                  key={evt.id || i}
-                  className="p-3 bg-[#050505] border border-[#141414] rounded-lg text-xs font-mono space-y-1"
-                >
-                  <div className="flex items-center justify-between text-[10px] text-[#5F5F5B]">
-                    <span>{new Date(evt.effectiveAt || evt.detectedAt).toISOString().split('T')[0]}</span>
-                    <span className="text-[#9A9A96]">{evt.eventType}</span>
+                <div key={evt.id || i} className="pt-2 text-xs space-y-1">
+                  <div className="flex items-center justify-between text-[11px] text-neutral-500 font-mono">
+                    <span>
+                      {new Date(evt.effectiveAt || evt.detectedAt).toISOString().split('T')[0]}
+                    </span>
+                    <span className="text-neutral-300">{evt.eventType}</span>
                   </div>
-                  <p className="text-xs text-[#F5F5F2] font-sans">{evt.summary}</p>
+                  <p className="text-xs text-neutral-300 font-sans">{evt.summary}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs font-mono text-[#5F5F5B] italic">
-              No state transitions recorded for this handle across available snapshots.
+            <p className="text-xs text-neutral-500 italic">
+              No historical changes recorded for this account.
             </p>
           )}
-        </div>
-
-        {/* Outbound Link */}
-        <div className="pt-2">
-          <a
-            href={`https://instagram.com/${username}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full py-2.5 px-3 bg-[#0D0D0D] hover:bg-[#141414] border border-[#1C1C1A] hover:border-[#262624] text-[#F5F5F2] rounded-xl text-xs font-mono flex items-center justify-center space-x-2 transition"
-          >
-            <span>Open @{username} on Instagram</span>
-            <span className="text-[#5F5F5B]">↗</span>
-          </a>
         </div>
       </div>
     </aside>

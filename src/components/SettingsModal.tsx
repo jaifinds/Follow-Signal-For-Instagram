@@ -40,10 +40,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           setStorageEstimate(`${usageKb} KB`);
         }
       }).catch(() => {
-        setStorageEstimate('Unavailable');
+        setStorageEstimate('Local IndexedDB');
       });
     } else {
-      setStorageEstimate('Local-only');
+      setStorageEstimate('Local IndexedDB');
     }
   }, [isOpen]);
 
@@ -63,113 +63,102 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in text-white"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#0A0A0A] border border-[#1C1C1A] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 text-[#F5F5F2]"
+        className="w-full max-w-lg bg-[#141414] border border-white/[0.08] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 min-w-0"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#1C1C1A] pb-4">
-          <div className="flex items-center space-x-2.5">
-            <span className="w-2 h-2 rounded-full bg-[#FF3048]" />
-            <span className="text-xs font-mono tracking-widest text-[#9A9A96] uppercase">
-              SETTINGS & PREFERENCES
-            </span>
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+          <div className="text-xs font-mono tracking-wider text-neutral-400 uppercase">
+            Settings & Storage
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-[#5F5F5B] hover:text-[#F5F5F2] transition cursor-pointer"
+            className="text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer p-1"
           >
-            [Close]
+            &times; Close
           </button>
         </div>
 
         {/* Setting Groups */}
-        <div className="space-y-5 text-xs font-sans">
+        <div className="space-y-4 text-xs font-sans">
           {/* Storage & Local Data */}
-          <div className="space-y-3">
-            <h4 className="text-[11px] font-mono tracking-wider uppercase text-[#9A9A96]">
+          <div className="space-y-2">
+            <div className="text-xs font-mono tracking-wider uppercase text-neutral-400">
               Local Device Storage
-            </h4>
-            <div className="p-3.5 bg-[#050505] border border-[#1C1C1A] rounded-xl flex items-center justify-between font-mono">
+            </div>
+            <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-between font-mono">
               <div>
-                <span className="text-xs text-[#F5F5F2] block">Sandboxed IndexedDB</span>
-                <span className="text-[11px] text-[#5F5F5B]">
-                  {totalSnapshots} {totalSnapshots === 1 ? 'snapshot' : 'snapshots'} stored locally
+                <span className="text-xs text-white font-medium block">IndexedDB Sandbox</span>
+                <span className="text-xs text-neutral-500">
+                  {totalSnapshots} {totalSnapshots === 1 ? 'snapshot' : 'snapshots'} stored
                 </span>
               </div>
-              <span className="text-xs text-[#9A9A96] bg-[#141414] px-2.5 py-1 rounded border border-[#1C1C1A]">
+              <span className="text-xs text-white bg-neutral-800 px-3 py-1.5 rounded border border-neutral-700 tabular-nums">
                 {storageEstimate}
               </span>
             </div>
           </div>
 
-          {/* Relationship Analysis Automation */}
-          <div className="space-y-3">
-            <h4 className="text-[11px] font-mono tracking-wider uppercase text-[#9A9A96]">
-              Relationship Engine
-            </h4>
+          {/* Analysis Preferences */}
+          <div className="space-y-2 pt-2">
+            <div className="text-xs font-mono tracking-wider uppercase text-neutral-400">
+              Preferences
+            </div>
             
-            <div className="flex items-center justify-between p-3.5 bg-[#050505] border border-[#1C1C1A] rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-xl">
               <div className="pr-4">
-                <span className="text-xs font-medium text-[#F5F5F2] block">
-                  Automatic Snapshot Comparison
+                <span className="text-xs font-medium text-white block">
+                  Automatic Check-in Comparison
                 </span>
-                <span className="text-[11px] text-[#5F5F5B] leading-relaxed">
-                  Automatically calculate mathematical diffs against baseline on import.
+                <span className="text-xs text-neutral-500 leading-relaxed">
+                  Automatically calculate differences when a second archive is added.
                 </span>
               </div>
               <button
                 onClick={handleToggleAutoCompare}
                 className={`w-11 h-6 rounded-full transition cursor-pointer p-0.5 relative shrink-0 ${
-                  prefs.autoCompareSnapshots ? 'bg-[#FF3048]' : 'bg-[#222220]'
+                  prefs.autoCompareSnapshots ? 'bg-white' : 'bg-neutral-800'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded-full bg-white transition transform ${
-                    prefs.autoCompareSnapshots ? 'translate-x-5' : 'translate-x-0'
+                  className={`w-5 h-5 rounded-full transition transform ${
+                    prefs.autoCompareSnapshots ? 'translate-x-5 bg-black' : 'translate-x-0 bg-neutral-400'
                   }`}
                 />
               </button>
             </div>
 
-            <div className="flex items-center justify-between p-3.5 bg-[#050505] border border-[#1C1C1A] rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-xl">
               <div className="pr-4">
-                <span className="text-xs font-medium text-[#F5F5F2] block">
-                  Show Source Confidence Indicators
+                <span className="text-xs font-medium text-white block">
+                  Source Confidence Badges
                 </span>
-                <span className="text-[11px] text-[#5F5F5B] leading-relaxed">
-                  Display whether relationship metadata originates from export archive or Graph API.
+                <span className="text-xs text-neutral-500 leading-relaxed">
+                  Show badges distinguishing export archives from API syncs.
                 </span>
               </div>
               <button
                 onClick={handleToggleBadges}
                 className={`w-11 h-6 rounded-full transition cursor-pointer p-0.5 relative shrink-0 ${
-                  prefs.showConfidenceBadges ? 'bg-[#FF3048]' : 'bg-[#222220]'
+                  prefs.showConfidenceBadges ? 'bg-white' : 'bg-neutral-800'
                 }`}
               >
                 <div
-                  className={`w-5 h-5 rounded-full bg-white transition transform ${
-                    prefs.showConfidenceBadges ? 'translate-x-5' : 'translate-x-0'
+                  className={`w-5 h-5 rounded-full transition transform ${
+                    prefs.showConfidenceBadges ? 'translate-x-5 bg-black' : 'translate-x-0 bg-neutral-400'
                   }`}
                 />
               </button>
             </div>
           </div>
-
-          {/* Privacy & Architecture Note */}
-          <div className="p-3.5 bg-[#080808] border border-[#1C1C1A] rounded-xl space-y-1.5 text-[11px] text-[#9A9A96] leading-relaxed">
-            <span className="text-[#F5F5F2] font-semibold block">Privacy Architecture</span>
-            <p>
-              Follow Signal does not possess a cloud relationship database. All ZIP decompressions, parsing heuristics, and identity records exist solely in your client browser memory.
-            </p>
-          </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="pt-3 border-t border-[#1C1C1A] flex items-center justify-between">
+        <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between">
           {confirmPurge ? (
             <div className="flex items-center space-x-2">
               <button
@@ -178,13 +167,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   setConfirmPurge(false);
                   onClose();
                 }}
-                className="py-1.5 px-3 bg-[#FF3048] hover:bg-[#E62E40] text-white text-xs font-mono font-bold rounded-lg transition cursor-pointer"
+                className="py-1.5 px-3 bg-red-600 text-white text-xs font-mono rounded transition cursor-pointer"
               >
-                Confirm permanent wipe
+                Confirm Delete All Data
               </button>
               <button
                 onClick={() => setConfirmPurge(false)}
-                className="py-1.5 px-3 border border-[#262624] text-[#9A9A96] text-xs font-mono rounded-lg transition cursor-pointer"
+                className="py-1.5 px-3 bg-neutral-800 text-white text-xs font-mono rounded transition cursor-pointer"
               >
                 Cancel
               </button>
@@ -192,14 +181,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           ) : (
             <button
               onClick={() => setConfirmPurge(true)}
-              className="text-xs font-mono text-[#5F5F5B] hover:text-[#FF3048] transition cursor-pointer"
+              className="text-xs font-mono text-red-400 hover:underline transition cursor-pointer"
             >
-              Wipe all local records
+              Wipe Local Records
             </button>
           )}
 
-          <span className="text-[10px] font-mono text-[#5F5F5B]">
-            Build v2.5 · Follow Signal
+          <span className="text-xs font-mono text-neutral-500">
+            Follow Signal
           </span>
         </div>
       </div>

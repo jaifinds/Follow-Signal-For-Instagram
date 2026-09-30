@@ -5,12 +5,14 @@ import { compareSnapshots } from '../lib/snapshotEngine';
 interface TimeMachineViewProps {
   snapshots: Snapshot[];
   onSimulateSecondCheckIn?: () => void;
+  onOpenImport?: () => void;
   onSelectProfile: (username: string) => void;
 }
 
 export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   snapshots,
   onSimulateSecondCheckIn,
+  onOpenImport,
   onSelectProfile,
 }) => {
   const [selectedSnapshotIndex, setSelectedSnapshotIndex] = useState(() =>
@@ -21,7 +23,6 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   const previousSnapshot =
     selectedSnapshotIndex > 0 ? snapshots[selectedSnapshotIndex - 1] : null;
 
-  // Compute differences against prior snapshot using verified snapshotEngine
   const diffComparison: SnapshotComparison | null = useMemo(() => {
     if (!activeSnapshot || !previousSnapshot) return null;
     return compareSnapshots(previousSnapshot, activeSnapshot);
@@ -39,39 +40,38 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-fade-in select-none text-[#F5F5F2]">
-      {/* Title & Metadata */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#1C1C1A] pb-6">
-        <div>
-          <div className="text-[11px] font-mono tracking-widest uppercase text-[#5F5F5B]">
-            TEMPORAL SCRUBBER
+    <div className="space-y-4 sm:space-y-6 animate-fade-in select-none text-[#F5F5F3] w-full min-w-0">
+      
+      {/* Title & Metadata Strip */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-3 sm:pb-5 border-b border-[#242630] min-w-0">
+        <div className="min-w-0">
+          <div className="text-[11px] font-mono tracking-wider text-[#C5A869] uppercase">
+            Timeline
           </div>
-          <h2 className="text-3xl sm:text-4xl font-sans font-bold text-[#F5F5F2] tracking-tight mt-1">
-            Time Machine
+          <h2 className="text-xl sm:text-3xl font-extrabold text-[#F5F5F3] tracking-tight mt-0.5 truncate">
+            Follower Changes
           </h2>
-          <p className="text-xs font-sans text-[#9A9A96] mt-1">
-            Scrub across chronological checkpoints to witness topological changes in your social circle.
+          <p className="text-xs text-[#9596A2] mt-0.5">
+            Compare checkpoints across dates to see who started or stopped following you.
           </p>
         </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="text-xs font-mono text-[#F5F5F2] bg-[#0D0D0D] px-3 py-1.5 rounded-lg border border-[#1C1C1A]">
-            {formatDate(activeSnapshot?.effectiveAt || (activeSnapshot as any)?.createdAt)} · {activeSnapshot?.label}
-          </span>
-        </div>
+        <span className="text-xs text-[#D4D5DC] bg-[#1A1B20] px-3.5 py-1.5 rounded-lg border border-[#242630] font-mono shrink-0">
+          {formatDate(activeSnapshot?.effectiveAt || (activeSnapshot as any)?.createdAt)} · {activeSnapshot?.label}
+        </span>
       </div>
 
-      {/* Tactile Scrubber Module */}
-      <div className="bg-[#080808] border border-[#1C1C1A] rounded-2xl p-6 sm:p-8 space-y-6">
-        <div className="flex items-center justify-between text-xs font-mono text-[#5F5F5B]">
-          <span className="uppercase tracking-wider">CHRONOLOGICAL POSITION</span>
+      {/* Scrubber Module */}
+      <div className="p-4 sm:p-5 bg-[#1A1B20] border border-[#242630] rounded-xl sm:rounded-2xl space-y-3 min-w-0">
+        <div className="flex items-center justify-between text-xs text-[#9596A2] font-mono">
+          <span className="uppercase tracking-wider">Checkpoint Timeline</span>
           <span>
-            CHECKPOINT {selectedSnapshotIndex + 1} OF {snapshots.length}
+            Checkpoint {selectedSnapshotIndex + 1} of {snapshots.length}
           </span>
         </div>
 
         {hasMultipleSnapshots ? (
-          <div className="space-y-4 pt-2">
+          <div className="space-y-3 min-w-0">
             <input
               type="range"
               min={0}
@@ -79,17 +79,17 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
               step={1}
               value={selectedSnapshotIndex}
               onChange={e => setSelectedSnapshotIndex(parseInt(e.target.value, 10))}
-              className="w-full accent-[#FF3048] cursor-pointer h-2 bg-[#1C1C1A] rounded-lg"
+              className="w-full accent-[#C5A869] cursor-pointer h-2 bg-[#21232A] rounded-lg border border-[#2B2D37]"
             />
-            <div className="flex justify-between text-xs font-mono text-[#5F5F5B]">
+            <div className="flex flex-wrap gap-2 text-xs">
               {snapshots.map((snap, idx) => (
                 <button
                   key={snap.id}
                   onClick={() => setSelectedSnapshotIndex(idx)}
-                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg transition cursor-pointer font-medium border text-xs ${
                     idx === selectedSnapshotIndex
-                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-bold'
-                      : 'hover:text-[#9A9A96] hover:bg-[#0D0D0D]'
+                      ? 'bg-[#C5A869] border-[#C5A869] text-[#131417] font-semibold'
+                      : 'bg-[#21232A] border-[#2B2D37] text-[#9596A2] hover:text-[#F5F5F3]'
                   }`}
                 >
                   {snap.label || `#${idx + 1}`}
@@ -98,121 +98,137 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
             </div>
           </div>
         ) : (
-          <div className="py-2 space-y-3">
-            <p className="text-xs text-[#9A9A96] leading-relaxed">
-              Baseline snapshot active. To observe temporal mutations, import a second archive or test with a simulated second check-in.
+          <div className="py-2 space-y-4">
+            <p className="text-xs text-[#9596A2] leading-relaxed">
+              Baseline checkpoint active ({activeSnapshot?.label}). To detect unfollowers and new followers, add a second date checkpoint.
             </p>
-            {onSimulateSecondCheckIn && (
-              <button
-                onClick={onSimulateSecondCheckIn}
-                className="py-2 px-3.5 bg-[#0D0D0D] hover:bg-[#141414] border border-[#1C1C1A] text-[#F5F5F2] rounded-lg text-xs font-mono transition cursor-pointer"
-              >
-                Simulate Second Check-in (+3 new / -2 severed) →
-              </button>
-            )}
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+              {onSimulateSecondCheckIn && (
+                <button
+                  onClick={onSimulateSecondCheckIn}
+                  className="px-4 py-2 bg-[#C5A869] hover:bg-[#D4B475] text-[#131417] font-semibold text-xs rounded-lg transition cursor-pointer flex items-center justify-center space-x-2 active:scale-95 shadow-sm"
+                >
+                  <span>Simulate 2nd Check-in (+3 New / -2 Unfollowed) &rarr;</span>
+                </button>
+              )}
+
+              {onOpenImport && (
+                <button
+                  onClick={onOpenImport}
+                  className="px-4 py-2 bg-[#21232A] hover:bg-[#292B33] border border-[#2B2D37] text-[#D4D5DC] text-xs font-medium rounded-lg transition cursor-pointer flex items-center justify-center space-x-1.5"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  <span>Import Newer Archive</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>
 
       {/* Comparative Delta Analysis */}
       {diffComparison ? (
-        <div className="space-y-6">
-          <div className="text-[11px] font-mono tracking-wider uppercase text-[#5F5F5B]">
-            MUTATION SUMMARY (VERSUS PREVIOUS CHECKPOINT)
+        <div className="space-y-4 sm:space-y-5 min-w-0">
+          <div className="text-xs font-mono tracking-wider text-[#C5A869] uppercase">
+            Changes Since Prior Checkpoint
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
-              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">New Followers</span>
-              <span className="text-3xl font-mono font-bold text-[#2E9E60]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 min-w-0">
+            <div className="p-3.5 sm:p-4 bg-[#1A1B20] border border-[#242630] rounded-xl space-y-1 min-w-0">
+              <span className="text-xs font-semibold uppercase text-[#2E7D47] block truncate">New Followers</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#F5F5F3] tabular-nums font-mono">
                 +{diffComparison.newFollowers.length}
               </span>
             </div>
 
-            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
-              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">Severed / Lost</span>
-              <span className="text-3xl font-mono font-bold text-[#FF3048]">
+            <div className="p-3.5 sm:p-4 bg-[#1A1B20] border border-[#242630] rounded-xl space-y-1 min-w-0">
+              <span className="text-xs font-semibold uppercase text-[#C93B3B] block truncate">Lost Followers</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#F5F5F3] tabular-nums font-mono">
                 -{diffComparison.lostFollowers.length}
               </span>
             </div>
 
-            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
-              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">New Following</span>
-              <span className="text-3xl font-mono font-bold text-[#F5F5F2]">
+            <div className="p-3.5 sm:p-4 bg-[#1A1B20] border border-[#242630] rounded-xl space-y-1 min-w-0">
+              <span className="text-xs font-semibold uppercase text-[#D4D5DC] block truncate">New Following</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#F5F5F3] tabular-nums font-mono">
                 +{diffComparison.newFollowing.length}
               </span>
             </div>
 
-            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
-              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">Unfollowed</span>
-              <span className="text-3xl font-mono font-bold text-[#9A9A96]">
+            <div className="p-3.5 sm:p-4 bg-[#1A1B20] border border-[#242630] rounded-xl space-y-1 min-w-0">
+              <span className="text-xs font-semibold uppercase text-[#9596A2] block truncate">Unfollowed</span>
+              <span className="text-2xl sm:text-3xl font-extrabold text-[#F5F5F3] tabular-nums font-mono">
                 -{diffComparison.unfollowed.length}
               </span>
             </div>
           </div>
 
-          {/* Granular Account Deltas */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+          {/* Granular Deltas List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1 min-w-0">
+            
             {/* New Followers Roster */}
-            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono text-[#2E9E60]">
-                <span>NEW ARRIVALS (+{diffComparison.newFollowers.length})</span>
+            <div className="space-y-2 min-w-0">
+              <div className="text-xs font-semibold text-[#2E7D47] uppercase tracking-wide">
+                New Followers (+{diffComparison.newFollowers.length})
               </div>
 
               {diffComparison.newFollowers.length > 0 ? (
-                <div className="space-y-1.5">
+                <div className="divide-y divide-[#242630] border-t border-b border-[#242630] min-w-0">
                   {diffComparison.newFollowers.map(handle => (
                     <div
                       key={handle}
                       onClick={() => onSelectProfile(handle)}
-                      className="p-2.5 bg-[#0A0A0A] hover:bg-[#141414] rounded-lg flex items-center justify-between font-mono text-xs cursor-pointer transition"
+                      className="py-2 px-2 flex items-center justify-between text-xs cursor-pointer hover:bg-[#1A1B20] transition min-w-0"
                     >
-                      <span className="text-[#F5F5F2]">@{handle}</span>
-                      <span className="text-[#2E9E60] text-[10px]">Followed you</span>
+                      <span className="text-[#F5F5F3] font-mono font-medium truncate">@{handle}</span>
+                      <span className="text-[#2E7D47] text-xs font-medium shrink-0 ml-2">+ Started following</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs font-mono text-[#5F5F5B] italic py-2">
-                  No new followers between these two checkpoints.
+                <p className="text-xs text-[#636573] italic py-2">
+                  No new followers recorded between these dates.
                 </p>
               )}
             </div>
 
             {/* Severed / Lost Followers Roster */}
-            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-3">
-              <div className="flex items-center justify-between text-xs font-mono text-[#FF3048]">
-                <span>SEVERED CONNECTIONS (-{diffComparison.lostFollowers.length})</span>
+            <div className="space-y-2 min-w-0">
+              <div className="text-xs font-semibold text-[#C93B3B] uppercase tracking-wide">
+                Unfollowers (-{diffComparison.lostFollowers.length})
               </div>
 
               {diffComparison.lostFollowers.length > 0 ? (
-                <div className="space-y-1.5">
+                <div className="divide-y divide-[#242630] border-t border-b border-[#242630] min-w-0">
                   {diffComparison.lostFollowers.map(handle => (
                     <div
                       key={handle}
                       onClick={() => onSelectProfile(handle)}
-                      className="p-2.5 bg-[#0A0A0A] hover:bg-[#141414] rounded-lg flex items-center justify-between font-mono text-xs cursor-pointer transition"
+                      className="py-2 px-2 flex items-center justify-between text-xs cursor-pointer hover:bg-[#1A1B20] transition min-w-0"
                     >
-                      <span className="text-[#F5F5F2]">@{handle}</span>
-                      <span className="text-[#FF3048] text-[10px]">No longer following</span>
+                      <span className="text-[#F5F5F3] font-mono font-medium truncate">@{handle}</span>
+                      <span className="text-[#C93B3B] text-xs font-medium shrink-0 ml-2">&minus; Stopped following</span>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs font-mono text-[#5F5F5B] italic py-2">
-                  Zero lost followers between these two checkpoints.
+                <p className="text-xs text-[#636573] italic py-2">
+                  Zero unfollowers between these checkpoints.
                 </p>
               )}
             </div>
           </div>
         </div>
       ) : (
-        <div className="p-8 bg-[#050505] border border-[#1C1C1A] rounded-xl text-center space-y-2">
-          <p className="font-mono text-xs text-[#9A9A96]">
-            This is your baseline checkpoint ({activeSnapshot?.label}).
+        <div className="p-6 bg-[#1A1B20] border border-[#242630] rounded-xl text-center space-y-1 min-w-0">
+          <p className="text-sm font-semibold text-[#F5F5F3]">
+            Baseline Active ({activeSnapshot?.label})
           </p>
-          <p className="text-xs text-[#5F5F5B]">
-            Future check-in archives reveal the exact people who joined or departed your circle.
+          <p className="text-xs text-[#9596A2]">
+            Add a second archive checkpoint above to compare differences.
           </p>
         </div>
       )}
