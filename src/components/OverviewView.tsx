@@ -34,165 +34,224 @@ export const OverviewView: React.FC<OverviewViewProps> = ({
 
   const closeFriendsCount = snapshot.closeFriends?.length || 0;
   const pendingRequestsCount = snapshot.pendingRequests?.length || 0;
+  const recentRequestsCount = snapshot.recentRequests?.length || 0;
 
   // 6 preview mutuals
   const mutualsPreview = (snapshot.mutuals || []).slice(0, 6);
 
+  const handleDownloadReport = () => {
+    const reportData = {
+      app: 'Follow Signal',
+      generatedAt: new Date().toISOString(),
+      snapshot: {
+        id: snapshot.id,
+        label: snapshot.label,
+        effectiveAt: snapshot.effectiveAt,
+        source: snapshot.source,
+        followersCount,
+        followingCount,
+        mutualCount,
+        notFollowingBackCount,
+        youDontFollowBackCount,
+        closeFriendsCount,
+        pendingRequestsCount,
+        recentRequestsCount,
+      },
+      eventsCount: events.length,
+      mutuals: snapshot.mutuals || [],
+      followingNotFollowingBack: snapshot.followingNotFollowingBack || [],
+      followersNotFollowedBack: snapshot.followersNotFollowedBack || [],
+      closeFriends: snapshot.closeFriends || [],
+      pendingRequests: snapshot.pendingRequests || [],
+    };
+
+    const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `follow_signal_report_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Title Header */}
-      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-2 border-b border-[#E5E1D8] pb-4">
+    <div className="space-y-12 animate-fade-in select-none">
+      {/* Title Header with Snapshot Label & Export Action */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#1C1C1A] pb-6">
         <div>
-          <span className="text-[11px] font-mono tracking-wider uppercase text-[#6E6A63]">
-            CURRENT SNAPSHOT · {snapshot.label}
-          </span>
-          <h2 className="text-3xl font-sans font-bold text-[#111111] tracking-tight">
-            Your circle.
+          <div className="text-[11px] font-mono tracking-widest uppercase text-[#5F5F5B] flex items-center space-x-2">
+            <span>ACTIVE SNAPSHOT</span>
+            <span>·</span>
+            <span className="text-[#9A9A96]">{snapshot.label}</span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-sans font-bold text-[#F5F5F2] tracking-tight mt-1">
+            Social Circle Intelligence
           </h2>
         </div>
 
-        <span className="text-xs font-mono text-[#8C6338] bg-[#FAF1E4] px-2.5 py-1 rounded-md border border-[#EADAC5]">
-          Verified Data · 100% Client-side
-        </span>
+        <div className="flex items-center space-x-2.5">
+          <button
+            onClick={handleDownloadReport}
+            className="text-xs font-mono text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#141414] border border-[#1C1C1A] hover:border-[#262624] px-3 py-1.5 rounded-lg transition cursor-pointer"
+            title="Download JSON Snapshot Audit Report"
+          >
+            Export JSON Report ↓
+          </button>
+          <span className="text-xs font-mono text-[#2E9E60] bg-[#0B2416] px-2.5 py-1.5 rounded-lg border border-[#164227]">
+            Verified Local Data
+          </span>
+        </div>
       </div>
 
-      {/* Primary Big Numbers — Compact, tactile cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Followers */}
-        <button
+      {/* Dominant Metrics — High-Hierarchy Canvas Display */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+        {/* Dominant Stat 1: Followers */}
+        <div
           onClick={() => onSelectCategory('FOLLOWERS')}
-          className="p-5 bg-white border border-[#E5E1D8] rounded-xl hover:border-[#111111] transition text-left cursor-pointer shadow-sm group"
+          className="md:col-span-4 p-6 sm:p-8 bg-[#080808] border border-[#1C1C1A] hover:border-[#262624] rounded-2xl cursor-pointer group transition space-y-3"
         >
-          <div className="text-4xl sm:text-5xl font-sans font-extrabold text-[#111111] tracking-tight group-hover:text-[#8C6338] transition">
+          <div className="text-[11px] font-mono tracking-widest uppercase text-[#5F5F5B] flex items-center justify-between">
+            <span>AUDIENCE REACH</span>
+            <span className="text-xs text-[#5F5F5B] group-hover:text-[#F5F5F2] transition">→</span>
+          </div>
+          <div className="text-6xl sm:text-7xl font-sans font-extrabold text-[#F5F5F2] tracking-tight group-hover:text-white transition">
             {followersCount}
           </div>
-          <div className="text-xs font-mono font-medium text-[#6E6A63] uppercase tracking-wider mt-1.5 flex items-center justify-between">
-            <span>Followers</span>
-            <span className="text-xs text-[#99948B] group-hover:text-[#111111]">→</span>
+          <div className="text-xs font-sans text-[#9A9A96]">
+            Total accounts subscribed to your updates.
           </div>
-        </button>
+        </div>
 
-        {/* Following */}
-        <button
-          onClick={() => onSelectCategory('FOLLOWING')}
-          className="p-5 bg-white border border-[#E5E1D8] rounded-xl hover:border-[#111111] transition text-left cursor-pointer shadow-sm group"
-        >
-          <div className="text-4xl sm:text-5xl font-sans font-extrabold text-[#111111] tracking-tight group-hover:text-[#8C6338] transition">
-            {followingCount}
-          </div>
-          <div className="text-xs font-mono font-medium text-[#6E6A63] uppercase tracking-wider mt-1.5 flex items-center justify-between">
-            <span>Following</span>
-            <span className="text-xs text-[#99948B] group-hover:text-[#111111]">→</span>
-          </div>
-        </button>
-
-        {/* Mutuals */}
-        <button
+        {/* Dominant Stat 2: Mutual Bonds */}
+        <div
           onClick={() => onSelectCategory('MUTUALS')}
-          className="p-5 bg-white border border-[#E5E1D8] rounded-xl hover:border-[#111111] transition text-left cursor-pointer shadow-sm group"
+          className="md:col-span-4 p-6 sm:p-8 bg-[#080808] border border-[#1C1C1A] hover:border-[#262624] rounded-2xl cursor-pointer group transition space-y-3"
         >
-          <div className="text-4xl sm:text-5xl font-sans font-extrabold text-[#111111] tracking-tight group-hover:text-[#2E7D52] transition">
+          <div className="text-[11px] font-mono tracking-widest uppercase text-[#5F5F5B] flex items-center justify-between">
+            <span>MUTUAL RECIPROCITY</span>
+            <span className="text-xs text-[#5F5F5B] group-hover:text-[#F5F5F2] transition">→</span>
+          </div>
+          <div className="text-6xl sm:text-7xl font-sans font-extrabold text-[#F5F5F2] tracking-tight group-hover:text-[#2E9E60] transition">
             {mutualCount}
           </div>
-          <div className="text-xs font-mono font-medium text-[#6E6A63] uppercase tracking-wider mt-1.5 flex items-center justify-between">
-            <span>Mutual bonds</span>
-            <span className="text-xs text-[#99948B] group-hover:text-[#111111]">→</span>
+          <div className="text-xs font-sans text-[#9A9A96]">
+            Accounts with bilateral follow agreements.
           </div>
-        </button>
-      </div>
+        </div>
 
-      {/* Secondary Metrics Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button
+        {/* Dominant Stat 3: Unreciprocated Outbound (Attention Imbalance) */}
+        <div
           onClick={() => onSelectCategory('DONT_FOLLOW_BACK')}
-          className="p-3.5 bg-white border border-[#E5E1D8] rounded-lg hover:border-[#111111] text-left cursor-pointer transition group"
+          className="md:col-span-4 p-6 sm:p-8 bg-[#080808] border border-[#1C1C1A] hover:border-[#262624] rounded-2xl cursor-pointer group transition space-y-3"
         >
-          <div className="text-xl font-bold font-mono text-[#111111] group-hover:text-[#8C6338]">
+          <div className="text-[11px] font-mono tracking-widest uppercase text-[#5F5F5B] flex items-center justify-between">
+            <span>NOT FOLLOWING BACK</span>
+            <span className="text-xs text-[#5F5F5B] group-hover:text-[#FF3048] transition">→</span>
+          </div>
+          <div className="text-6xl sm:text-7xl font-sans font-extrabold text-[#F5F5F2] tracking-tight group-hover:text-[#FF3048] transition">
             {notFollowingBackCount}
           </div>
-          <div className="text-[11px] font-sans text-[#6E6A63] mt-0.5">
-            Don&apos;t follow back
+          <div className="text-xs font-sans text-[#9A9A96]">
+            People you follow who do not follow you back.
           </div>
-        </button>
-
-        <button
-          onClick={() => onSelectCategory('YOU_DONT_FOLLOW')}
-          className="p-3.5 bg-white border border-[#E5E1D8] rounded-lg hover:border-[#111111] text-left cursor-pointer transition group"
-        >
-          <div className="text-xl font-bold font-mono text-[#111111] group-hover:text-[#8C6338]">
-            {youDontFollowBackCount}
-          </div>
-          <div className="text-[11px] font-sans text-[#6E6A63] mt-0.5">
-            You don&apos;t follow
-          </div>
-        </button>
-
-        <button
-          onClick={() => onSelectCategory('CLOSE_FRIENDS')}
-          className="p-3.5 bg-white border border-[#E5E1D8] rounded-lg hover:border-[#111111] text-left cursor-pointer transition group"
-        >
-          <div className="text-xl font-bold font-mono text-[#111111] group-hover:text-[#2E7D52]">
-            {closeFriendsCount}
-          </div>
-          <div className="text-[11px] font-sans text-[#6E6A63] mt-0.5">
-            Close friends
-          </div>
-        </button>
-
-        <button
-          onClick={() => onSelectCategory('REQUESTS')}
-          className="p-3.5 bg-white border border-[#E5E1D8] rounded-lg hover:border-[#111111] text-left cursor-pointer transition group"
-        >
-          <div className="text-xl font-bold font-mono text-[#111111] group-hover:text-[#8C6338]">
-            {pendingRequestsCount}
-          </div>
-          <div className="text-[11px] font-sans text-[#6E6A63] mt-0.5">
-            Pending requests
-          </div>
-        </button>
+        </div>
       </div>
 
-      {/* Mutual Connections Roster Preview */}
+      {/* Secondary Metrics Strip — Quiet Horizontal Flow */}
+      <div className="pt-2">
+        <div className="text-[11px] font-mono tracking-wider uppercase text-[#5F5F5B] pb-3">
+          ANCILLARY SEGMENTS
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <button
+            onClick={() => onSelectCategory('FOLLOWING')}
+            className="p-4 bg-[#050505] border border-[#1C1C1A] hover:border-[#262624] rounded-xl text-left cursor-pointer transition group"
+          >
+            <div className="text-2xl font-bold font-mono text-[#F5F5F2] group-hover:text-white">
+              {followingCount}
+            </div>
+            <div className="text-xs font-sans text-[#9A9A96] mt-1 flex items-center justify-between">
+              <span>Following</span>
+              <span className="text-[#5F5F5B] group-hover:text-[#F5F5F2]">→</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onSelectCategory('YOU_DONT_FOLLOW')}
+            className="p-4 bg-[#050505] border border-[#1C1C1A] hover:border-[#262624] rounded-xl text-left cursor-pointer transition group"
+          >
+            <div className="text-2xl font-bold font-mono text-[#F5F5F2] group-hover:text-white">
+              {youDontFollowBackCount}
+            </div>
+            <div className="text-xs font-sans text-[#9A9A96] mt-1 flex items-center justify-between">
+              <span>You don&apos;t follow</span>
+              <span className="text-[#5F5F5B] group-hover:text-[#F5F5F2]">→</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onSelectCategory('CLOSE_FRIENDS')}
+            className="p-4 bg-[#050505] border border-[#1C1C1A] hover:border-[#262624] rounded-xl text-left cursor-pointer transition group"
+          >
+            <div className="text-2xl font-bold font-mono text-[#F5F5F2] group-hover:text-[#2E9E60]">
+              {closeFriendsCount}
+            </div>
+            <div className="text-xs font-sans text-[#9A9A96] mt-1 flex items-center justify-between">
+              <span>Close friends</span>
+              <span className="text-[#5F5F5B] group-hover:text-[#F5F5F2]">→</span>
+            </div>
+          </button>
+
+          <button
+            onClick={() => onSelectCategory('REQUESTS')}
+            className="p-4 bg-[#050505] border border-[#1C1C1A] hover:border-[#262624] rounded-xl text-left cursor-pointer transition group"
+          >
+            <div className="text-2xl font-bold font-mono text-[#F5F5F2] group-hover:text-[#FF3048]">
+              {pendingRequestsCount}
+            </div>
+            <div className="text-xs font-sans text-[#9A9A96] mt-1 flex items-center justify-between">
+              <span>Pending requests</span>
+              <span className="text-[#5F5F5B] group-hover:text-[#F5F5F2]">→</span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Mutual Bonds Preview Roster */}
       {mutualsPreview.length > 0 && (
-        <div className="bg-white border border-[#E5E1D8] rounded-xl p-5 sm:p-6 space-y-4 shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-            <span className="text-xs font-mono font-bold text-[#111111] uppercase tracking-wider">
-              MUTUAL CONNECTIONS SAMPLE
+        <div className="space-y-4 pt-4 border-t border-[#1C1C1A]">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-mono tracking-wider uppercase text-[#5F5F5B]">
+              VERIFIED MUTUAL SAMPLE
             </span>
             <button
               onClick={() => onSelectCategory('MUTUALS')}
-              className="text-xs font-mono text-[#111111] hover:underline font-semibold cursor-pointer"
+              className="text-xs font-mono text-[#9A9A96] hover:text-[#F5F5F2] transition cursor-pointer"
             >
-              View all {mutualCount} →
+              View all {mutualCount} mutuals →
             </button>
           </div>
 
-          <div className="divide-y divide-[#F0ECE1]">
-            {mutualsPreview.map(handle => {
-              const lower = handle.toLowerCase();
-              const prof = profiles[lower];
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {mutualsPreview.map(user => {
+              const lower = user.toLowerCase();
               return (
                 <div
                   key={lower}
                   onClick={() => onSelectProfile(lower)}
-                  className="py-3 px-2 flex items-center justify-between hover:bg-[#FAF8F5] rounded-md transition cursor-pointer"
+                  className="p-3 bg-[#080808] border border-[#1C1C1A] hover:border-[#262624] rounded-xl transition cursor-pointer truncate space-y-1.5 group"
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-7 h-7 rounded-full bg-[#E8E4DC] text-[#44403C] flex items-center justify-center font-mono text-xs font-bold">
-                      {lower.slice(0, 2).toUpperCase()}
-                    </div>
-                    <span className="font-mono text-xs font-bold text-[#111111]">
-                      @{lower}
-                    </span>
-                    {prof?.displayName && (
-                      <span className="text-xs text-[#6E6A63] truncate">
-                        · {prof.displayName}
-                      </span>
-                    )}
+                  <div className="w-8 h-8 rounded-full bg-[#141414] border border-[#262624] text-[#F5F5F2] flex items-center justify-center font-mono text-xs font-bold group-hover:border-[#FF3048] transition">
+                    {lower.slice(0, 2).toUpperCase()}
                   </div>
-                  <span className="text-xs font-mono text-[#2E7D52] bg-[#EBF5EE] px-2 py-0.5 rounded">
+                  <div className="font-mono text-xs text-[#F5F5F2] truncate group-hover:text-white">
+                    @{lower}
+                  </div>
+                  <div className="text-[10px] font-mono text-[#2E9E60]">
                     Mutual
-                  </span>
+                  </div>
                 </div>
               );
             })}

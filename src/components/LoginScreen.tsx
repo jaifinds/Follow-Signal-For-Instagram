@@ -28,58 +28,63 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       } else {
         setLoadingGoogle(false);
         setGoogleNotice(
-          auth.message || 'Google authentication requires production OAuth configuration. You can use Follow Signal directly with your archive.'
+          auth.message ||
+            'Google authentication requires production OAuth configuration. You can import an archive directly without an account.'
         );
       }
     } catch {
       setLoadingGoogle(false);
-      setGoogleNotice('Google authentication is temporarily unavailable. You can use Follow Signal directly with your archive.');
+      setGoogleNotice(
+        'Google authentication is temporarily unavailable. You can use Follow Signal directly with your archive.'
+      );
     }
   };
 
   return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center px-4 py-12 text-center animate-fade-in">
-      <div className="w-full max-w-sm mx-auto space-y-8">
-        {/* Brand & Subtitle */}
-        <div className="space-y-3">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#EFECE6] border border-[#E0DCD3] text-xs font-mono text-[#55514B]">
-            <span className="w-2 h-2 rounded-full bg-[#2E7D52]" />
-            <span>Private by default</span>
+    <div className="min-h-[85vh] flex flex-col items-center justify-center px-4 py-16 text-center select-none">
+      <div className="w-full max-w-md mx-auto space-y-9">
+        {/* Subtle Brand & Status Marker */}
+        <div className="space-y-4">
+          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-[#0D0D0D] border border-[#1C1C1A] text-[11px] font-mono text-[#9A9A96]">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#FF3048] shadow-[0_0_6px_rgba(255,48,72,0.8)]" />
+            <span>LOCAL RELATIONSHIP INTELLIGENCE</span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-sans font-extrabold tracking-tight text-[#111111] leading-none pt-1">
-            FOLLOW SIGNAL
+          <h1 className="text-4xl sm:text-5xl font-sans font-extrabold tracking-tight text-[#F5F5F2] leading-tight">
+            YOUR CIRCLE,<br />
+            OVER TIME.
           </h1>
 
-          <p className="text-lg font-serif italic text-[#44403C]">
-            Your circle, over time.
+          <p className="text-sm font-sans text-[#9A9A96] max-w-sm mx-auto leading-relaxed">
+            Forensic analysis of your Instagram social graph. Mutual bonds, unreciprocated following, and historical check-in diffs.
           </p>
         </div>
 
-        {/* Notice if Google OAuth is not configured on this host */}
+        {/* Notice if Google OAuth is unconfigured */}
         {googleNotice && (
-          <div className="p-3.5 bg-[#FAF8F5] border border-[#E5E1D8] rounded-xl text-xs text-[#6E6A63] text-left leading-relaxed space-y-2">
+          <div className="p-4 bg-[#0D0D0D] border border-[#262624] rounded-xl text-xs text-[#9A9A96] text-left leading-relaxed space-y-2">
             <p>{googleNotice}</p>
             <button
               onClick={() => {
                 setGoogleNotice(null);
                 onOpenImport();
               }}
-              className="text-[#111111] font-semibold underline underline-offset-2 block cursor-pointer"
+              className="text-[#F5F5F2] font-semibold underline underline-offset-4 block cursor-pointer hover:text-white"
             >
               Continue with archive import →
             </button>
           </div>
         )}
 
-        {/* Primary Action: Continue with Google */}
-        <div className="space-y-4">
+        {/* Authentication Options */}
+        <div className="space-y-3.5 pt-1">
+          {/* Primary Action: Continue with Google */}
           <button
             onClick={handleGoogleLogin}
             disabled={loadingGoogle}
-            className="w-full h-12 px-5 bg-white hover:bg-[#F7F5F0] border border-[#D5D0C5] text-[#111111] font-sans font-medium text-sm rounded-xl shadow-xs transition active:scale-[0.99] flex items-center justify-center space-x-3 cursor-pointer disabled:opacity-50"
+            className="w-full h-12 px-5 bg-[#F5F5F2] hover:bg-white text-black font-sans font-semibold text-xs tracking-wide rounded-xl transition active:scale-[0.99] flex items-center justify-center space-x-3 cursor-pointer disabled:opacity-50 shadow-sm"
           >
-            {/* Official Google 'G' Mark */}
+            {/* Google G icon */}
             <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
@@ -102,41 +107,41 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           </button>
 
           {/* Divider */}
-          <div className="flex items-center space-x-3 text-xs text-[#99948B] font-mono">
-            <span className="flex-1 h-[1px] bg-[#E5E1D8]" />
+          <div className="flex items-center space-x-3 text-xs text-[#5F5F5B] font-mono py-1">
+            <span className="flex-1 h-[1px] bg-[#1C1C1A]" />
             <span>or</span>
-            <span className="flex-1 h-[1px] bg-[#E5E1D8]" />
+            <span className="flex-1 h-[1px] bg-[#1C1C1A]" />
           </div>
 
-          {/* Secondary Action: Archive Without Login */}
+          {/* Secondary Action: Guest Archive */}
           <button
             onClick={onOpenImport}
-            className="w-full h-12 px-5 bg-[#111111] hover:bg-[#2A2A2A] text-white font-sans font-medium text-xs tracking-wider uppercase rounded-xl shadow-xs transition active:scale-[0.99] cursor-pointer"
+            className="w-full h-12 px-5 bg-[#0D0D0D] hover:bg-[#141414] border border-[#1C1C1A] hover:border-[#262624] text-[#F5F5F2] font-sans font-medium text-xs tracking-wider uppercase rounded-xl transition active:scale-[0.99] cursor-pointer"
           >
             Import archive without an account
           </button>
         </div>
 
-        {/* Verified Sample Archive Link */}
+        {/* Verification Fixture Trigger */}
         <div className="pt-2">
           <button
             onClick={onLoadVerifiedArchive}
             disabled={isLoadingVerified}
-            className="text-xs text-[#6E6A63] hover:text-[#111111] font-mono underline underline-offset-4 cursor-pointer transition disabled:opacity-50"
+            className="text-xs text-[#5F5F5B] hover:text-[#9A9A96] font-mono underline underline-offset-4 cursor-pointer transition disabled:opacity-50"
           >
             {isLoadingVerified
-              ? 'Loading verified archive...'
-              : 'Explore verified sample archive (163 accounts) →'}
+              ? 'Loading verified baseline archive...'
+              : 'Explore verified baseline dataset (163 accounts) →'}
           </button>
         </div>
 
-        {/* Privacy Note */}
-        <div className="pt-4 text-center space-y-1 text-xs text-[#6E6A63] font-sans">
-          <p className="font-medium text-[#111111]">
+        {/* Technical Privacy Commitments */}
+        <div className="pt-6 border-t border-[#1C1C1A] text-center space-y-1.5 text-xs text-[#5F5F5B]">
+          <p className="font-mono text-[#9A9A96]">
             No Instagram password required.
           </p>
-          <p className="text-[11px] text-[#99948B]">
-            All relationship files are processed locally in your browser memory.
+          <p className="text-[11px] leading-relaxed">
+            All ZIP files and JSON rosters are parsed locally in browser memory.
           </p>
         </div>
       </div>

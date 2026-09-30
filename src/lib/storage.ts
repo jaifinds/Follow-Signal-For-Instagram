@@ -33,8 +33,8 @@ export function getDefaultPreferences(): UserPreference {
 
 export function loadAppState(): AppState {
   try {
-    const savedMode = (localStorage.getItem(STORAGE_KEYS.CURRENT_MODE) as 'DEMO' | 'USER') || 'DEMO';
-    const savedUsername = localStorage.getItem(STORAGE_KEYS.ACCOUNT_USERNAME) || (savedMode === 'DEMO' ? DEMO_ACCOUNT_HANDLE : 'my_instagram');
+    const savedMode = (localStorage.getItem(STORAGE_KEYS.CURRENT_MODE) as 'DEMO' | 'USER') || 'USER';
+    const savedUsername = localStorage.getItem(STORAGE_KEYS.ACCOUNT_USERNAME) || 'my_instagram';
 
     if (savedMode === 'DEMO') {
       const demoEvents = buildDemoEvents();
@@ -91,13 +91,13 @@ export function loadAppState(): AppState {
       preferences: prefsRaw ? JSON.parse(prefsRaw) : getDefaultPreferences(),
     };
   } catch (err) {
-    console.error('Failed to load local app state, falling back to demo mode:', err);
+    console.error('Failed to load local app state, resetting to clean user workspace:', err);
     return {
-      mode: 'DEMO',
-      accountUsername: DEMO_ACCOUNT_HANDLE,
-      snapshots: DEMO_SNAPSHOTS,
-      events: buildDemoEvents(),
-      profiles: SYNTHETIC_PROFILES,
+      mode: 'USER',
+      accountUsername: 'my_instagram',
+      snapshots: [],
+      events: [],
+      profiles: {},
       auditLogs: [],
       preferences: getDefaultPreferences(),
     };

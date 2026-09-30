@@ -21,7 +21,7 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   const previousSnapshot =
     selectedSnapshotIndex > 0 ? snapshots[selectedSnapshotIndex - 1] : null;
 
-  // Compute differences against prior snapshot
+  // Compute differences against prior snapshot using verified snapshotEngine
   const diffComparison: SnapshotComparison | null = useMemo(() => {
     if (!activeSnapshot || !previousSnapshot) return null;
     return compareSnapshots(previousSnapshot, activeSnapshot);
@@ -39,33 +39,39 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-white border border-[#E5E1D8] rounded-xl p-5 shadow-sm space-y-1">
-        <span className="text-[11px] font-mono tracking-wider text-[#6E6A63] uppercase">
-          TEMPORAL RELATIONSHIP ENGINE
-        </span>
-        <h2 className="text-2xl font-sans font-bold text-[#111111] tracking-tight">
-          Time machine.
-        </h2>
-        <p className="text-xs font-sans text-[#6E6A63]">
-          Scrub through check-in snapshots to observe how your social circle evolved.
-        </p>
+    <div className="space-y-8 animate-fade-in select-none text-[#F5F5F2]">
+      {/* Title & Metadata */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#1C1C1A] pb-6">
+        <div>
+          <div className="text-[11px] font-mono tracking-widest uppercase text-[#5F5F5B]">
+            TEMPORAL SCRUBBER
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-sans font-bold text-[#F5F5F2] tracking-tight mt-1">
+            Time Machine
+          </h2>
+          <p className="text-xs font-sans text-[#9A9A96] mt-1">
+            Scrub across chronological checkpoints to witness topological changes in your social circle.
+          </p>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <span className="text-xs font-mono text-[#F5F5F2] bg-[#0D0D0D] px-3 py-1.5 rounded-lg border border-[#1C1C1A]">
+            {formatDate(activeSnapshot?.effectiveAt || (activeSnapshot as any)?.createdAt)} · {activeSnapshot?.label}
+          </span>
+        </div>
       </div>
 
-      {/* Interactive Timeline Scrubber Card */}
-      <div className="bg-white border border-[#E5E1D8] rounded-xl p-5 sm:p-6 shadow-sm space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono text-[#6E6A63]">
-          <span className="font-semibold text-[#111111] uppercase tracking-wider">
-            ACTIVE SNAPSHOT IN TIME
-          </span>
-          <span className="bg-[#FAF8F5] px-2.5 py-1 rounded border border-[#E5E1D8] text-[#111111]">
-            {formatDate(activeSnapshot?.createdAt)} · {activeSnapshot?.label}
+      {/* Tactile Scrubber Module */}
+      <div className="bg-[#080808] border border-[#1C1C1A] rounded-2xl p-6 sm:p-8 space-y-6">
+        <div className="flex items-center justify-between text-xs font-mono text-[#5F5F5B]">
+          <span className="uppercase tracking-wider">CHRONOLOGICAL POSITION</span>
+          <span>
+            CHECKPOINT {selectedSnapshotIndex + 1} OF {snapshots.length}
           </span>
         </div>
 
         {hasMultipleSnapshots ? (
-          <div className="space-y-3 pt-2">
+          <div className="space-y-4 pt-2">
             <input
               type="range"
               min={0}
@@ -73,17 +79,17 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
               step={1}
               value={selectedSnapshotIndex}
               onChange={e => setSelectedSnapshotIndex(parseInt(e.target.value, 10))}
-              className="w-full accent-[#111111] cursor-pointer h-2 bg-[#EFECE6] rounded-lg"
+              className="w-full accent-[#FF3048] cursor-pointer h-2 bg-[#1C1C1A] rounded-lg"
             />
-            <div className="flex justify-between text-xs font-mono text-[#6E6A63]">
+            <div className="flex justify-between text-xs font-mono text-[#5F5F5B]">
               {snapshots.map((snap, idx) => (
                 <button
                   key={snap.id}
                   onClick={() => setSelectedSnapshotIndex(idx)}
-                  className={`px-2 py-1 rounded transition cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg transition cursor-pointer ${
                     idx === selectedSnapshotIndex
-                      ? 'bg-[#111111] text-white font-bold'
-                      : 'hover:text-[#111111] hover:bg-[#FAF8F5]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-bold'
+                      : 'hover:text-[#9A9A96] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   {snap.label || `#${idx + 1}`}
@@ -93,195 +99,123 @@ export const TimeMachineView: React.FC<TimeMachineViewProps> = ({
           </div>
         ) : (
           <div className="py-2 space-y-3">
-            <p className="text-xs text-[#6E6A63] leading-relaxed">
-              Baseline snapshot active. To observe temporal mutations, import a second archive or simulate the second check-in diff.
+            <p className="text-xs text-[#9A9A96] leading-relaxed">
+              Baseline snapshot active. To observe temporal mutations, import a second archive or test with a simulated second check-in.
             </p>
             {onSimulateSecondCheckIn && (
               <button
                 onClick={onSimulateSecondCheckIn}
-                className="px-4 py-2 bg-[#FAF8F5] hover:bg-[#EFECE6] border border-[#D5D0C5] text-[#111111] text-xs font-sans font-medium rounded-lg transition cursor-pointer"
+                className="py-2 px-3.5 bg-[#0D0D0D] hover:bg-[#141414] border border-[#1C1C1A] text-[#F5F5F2] rounded-lg text-xs font-mono transition cursor-pointer"
               >
-                + Ingest Second Check-In Archive (+3 / −2 followers)
+                Simulate Second Check-in (+3 new / -2 severed) →
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* Snapshot Ledger Changes Card */}
+      {/* Comparative Delta Analysis */}
       {diffComparison ? (
-        <div className="bg-white border border-[#E5E1D8] rounded-xl p-5 sm:p-6 shadow-sm space-y-4">
-          <span className="text-xs font-mono tracking-wider text-[#6E6A63] uppercase font-bold block border-b border-[#F0ECE1] pb-2.5">
-            CHANGES DETECTED AT THIS CHECK-IN
-          </span>
+        <div className="space-y-6">
+          <div className="text-[11px] font-mono tracking-wider uppercase text-[#5F5F5B]">
+            MUTATION SUMMARY (VERSUS PREVIOUS CHECKPOINT)
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 font-mono text-xs">
-            <div className="p-3.5 bg-[#FAF8F5] rounded-lg border border-[#E5E1D8]">
-              <span className="text-[#2E7D52] font-bold block mb-2 text-sm">
-                +{diffComparison.newFollowers.length} NEW FOLLOWERS
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
+              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">New Followers</span>
+              <span className="text-3xl font-mono font-bold text-[#2E9E60]">
+                +{diffComparison.newFollowers.length}
               </span>
-              <div className="space-y-1.5">
-                {diffComparison.newFollowers.map(h => (
-                  <button
-                    key={h}
-                    onClick={() => onSelectProfile(h)}
-                    className="block text-[#111111] hover:underline font-semibold"
-                  >
-                    @{h}
-                  </button>
-                ))}
-                {diffComparison.newFollowers.length === 0 && (
-                  <span className="text-[#99948B]">None recorded</span>
-                )}
-              </div>
             </div>
 
-            <div className="p-3.5 bg-[#FAF8F5] rounded-lg border border-[#E5E1D8]">
-              <span className="text-[#B83A2E] font-bold block mb-2 text-sm">
-                −{diffComparison.lostFollowers.length} SEVERED BONDS
+            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
+              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">Severed / Lost</span>
+              <span className="text-3xl font-mono font-bold text-[#FF3048]">
+                -{diffComparison.lostFollowers.length}
               </span>
-              <div className="space-y-1.5">
-                {diffComparison.lostFollowers.map(h => (
-                  <button
-                    key={h}
-                    onClick={() => onSelectProfile(h)}
-                    className="block text-[#B83A2E] hover:underline line-through font-semibold"
-                  >
-                    @{h}
-                  </button>
-                ))}
-                {diffComparison.lostFollowers.length === 0 && (
-                  <span className="text-[#99948B]">None recorded</span>
-                )}
-              </div>
             </div>
 
-            <div className="p-3.5 bg-[#FAF8F5] rounded-lg border border-[#E5E1D8]">
-              <span className="text-[#8C6338] font-bold block mb-2 text-sm">
-                +{diffComparison.becameMutual.length} BECAME MUTUAL
+            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
+              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">New Following</span>
+              <span className="text-3xl font-mono font-bold text-[#F5F5F2]">
+                +{diffComparison.newFollowing.length}
               </span>
-              <div className="space-y-1.5">
-                {diffComparison.becameMutual.map(h => (
-                  <button
-                    key={h}
-                    onClick={() => onSelectProfile(h)}
-                    className="block text-[#8C6338] hover:underline font-semibold"
-                  >
-                    @{h}
-                  </button>
-                ))}
-                {diffComparison.becameMutual.length === 0 && (
-                  <span className="text-[#99948B]">None recorded</span>
-                )}
+            </div>
+
+            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-1">
+              <span className="text-[10px] font-mono uppercase text-[#5F5F5B] block">Unfollowed</span>
+              <span className="text-3xl font-mono font-bold text-[#9A9A96]">
+                -{diffComparison.unfollowed.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Granular Account Deltas */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+            {/* New Followers Roster */}
+            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono text-[#2E9E60]">
+                <span>NEW ARRIVALS (+{diffComparison.newFollowers.length})</span>
               </div>
+
+              {diffComparison.newFollowers.length > 0 ? (
+                <div className="space-y-1.5">
+                  {diffComparison.newFollowers.map(handle => (
+                    <div
+                      key={handle}
+                      onClick={() => onSelectProfile(handle)}
+                      className="p-2.5 bg-[#0A0A0A] hover:bg-[#141414] rounded-lg flex items-center justify-between font-mono text-xs cursor-pointer transition"
+                    >
+                      <span className="text-[#F5F5F2]">@{handle}</span>
+                      <span className="text-[#2E9E60] text-[10px]">Followed you</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs font-mono text-[#5F5F5B] italic py-2">
+                  No new followers between these two checkpoints.
+                </p>
+              )}
+            </div>
+
+            {/* Severed / Lost Followers Roster */}
+            <div className="p-5 bg-[#050505] border border-[#1C1C1A] rounded-xl space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono text-[#FF3048]">
+                <span>SEVERED CONNECTIONS (-{diffComparison.lostFollowers.length})</span>
+              </div>
+
+              {diffComparison.lostFollowers.length > 0 ? (
+                <div className="space-y-1.5">
+                  {diffComparison.lostFollowers.map(handle => (
+                    <div
+                      key={handle}
+                      onClick={() => onSelectProfile(handle)}
+                      className="p-2.5 bg-[#0A0A0A] hover:bg-[#141414] rounded-lg flex items-center justify-between font-mono text-xs cursor-pointer transition"
+                    >
+                      <span className="text-[#F5F5F2]">@{handle}</span>
+                      <span className="text-[#FF3048] text-[10px]">No longer following</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs font-mono text-[#5F5F5B] italic py-2">
+                  Zero lost followers between these two checkpoints.
+                </p>
+              )}
             </div>
           </div>
         </div>
       ) : (
-        <div className="p-5 bg-white border border-[#E5E1D8] rounded-xl text-xs font-mono text-[#6E6A63] shadow-sm">
-          Initial baseline checkpoint. All subsequent imported archives will compute exact mathematical set differences.
+        <div className="p-8 bg-[#050505] border border-[#1C1C1A] rounded-xl text-center space-y-2">
+          <p className="font-mono text-xs text-[#9A9A96]">
+            This is your baseline checkpoint ({activeSnapshot?.label}).
+          </p>
+          <p className="text-xs text-[#5F5F5B]">
+            Future check-in archives reveal the exact people who joined or departed your circle.
+          </p>
         </div>
       )}
-
-      {/* 2D Topological Spatial Map */}
-      <div className="bg-white border border-[#E5E1D8] rounded-xl p-5 sm:p-6 shadow-sm space-y-4">
-        <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-2.5">
-          <span className="text-xs font-mono font-bold text-[#111111] uppercase tracking-wider">
-            TOPOLOGICAL CIRCLE MAP
-          </span>
-          <span className="text-xs font-mono text-[#6E6A63]">
-            {activeSnapshot?.followersCount} followers · {activeSnapshot?.followingCount} following
-          </span>
-        </div>
-
-        <div className="relative w-full h-72 sm:h-80 bg-[#FAF9F7] rounded-xl border border-[#E5E1D8] overflow-hidden flex items-center justify-center">
-          {/* Subtle concentric rings */}
-          <div className="absolute w-28 h-28 rounded-full border border-[#E5E1D8]" />
-          <div className="absolute w-52 h-52 rounded-full border border-[#E5E1D8]" />
-          <div className="absolute w-72 h-72 rounded-full border border-[#E5E1D8]" />
-          <div className="absolute w-full h-[1px] bg-[#EAE6DE]" />
-          <div className="absolute h-full w-[1px] bg-[#EAE6DE]" />
-
-          {/* Center Anchor */}
-          <div className="relative z-10 w-10 h-10 rounded-full bg-[#111111] text-white flex items-center justify-center font-mono text-xs font-bold shadow-md">
-            YOU
-          </div>
-
-          {activeSnapshot && (
-            <>
-              {/* Mutuals arc */}
-              {(activeSnapshot.mutuals || []).slice(0, 8).map((handle, idx) => {
-                const angle = -0.8 + idx * 0.22;
-                const r = 50 + (idx % 3) * 12;
-                const x = Math.sin(angle) * r;
-                const y = Math.cos(angle) * r;
-                return (
-                  <button
-                    key={handle}
-                    onClick={() => onSelectProfile(handle)}
-                    style={{ transform: `translate(${x}px, ${y}px)` }}
-                    className="absolute z-10 px-2 py-0.5 rounded text-[10px] font-mono bg-white border border-[#2E7D52] text-[#2E7D52] hover:bg-[#2E7D52] hover:text-white transition cursor-pointer shadow-xs"
-                    title={`Mutual: @${handle}`}
-                  >
-                    @{handle}
-                  </button>
-                );
-              })}
-
-              {/* Unreciprocated flank */}
-              {(activeSnapshot.followingNotFollowingBack || []).slice(0, 5).map((handle, idx) => {
-                const x = -88 - (idx % 2) * 20;
-                const y = -35 + idx * 22;
-                return (
-                  <button
-                    key={handle}
-                    onClick={() => onSelectProfile(handle)}
-                    style={{ transform: `translate(${x}px, ${y}px)` }}
-                    className="absolute z-10 px-2 py-0.5 rounded text-[10px] font-mono bg-white border border-[#8C6338] text-[#8C6338] hover:bg-[#8C6338] hover:text-white transition cursor-pointer shadow-xs"
-                    title={`Doesn't follow back: @${handle}`}
-                  >
-                    @{handle}
-                  </button>
-                );
-              })}
-
-              {/* Inbound fans flank */}
-              {(activeSnapshot.followersNotFollowedBack || []).slice(0, 5).map((handle, idx) => {
-                const x = 88 + (idx % 2) * 20;
-                const y = -35 + idx * 22;
-                return (
-                  <button
-                    key={handle}
-                    onClick={() => onSelectProfile(handle)}
-                    style={{ transform: `translate(${x}px, ${y}px)` }}
-                    className="absolute z-10 px-2 py-0.5 rounded text-[10px] font-mono bg-white border border-[#D5D0C5] text-[#6E6A63] hover:border-[#111111] hover:text-[#111111] transition cursor-pointer shadow-xs"
-                    title={`Follower: @${handle}`}
-                  >
-                    @{handle}
-                  </button>
-                );
-              })}
-
-              {/* Lost followers if present */}
-              {diffComparison?.lostFollowers.map((handle, idx) => {
-                const x = -40 + idx * 45;
-                const y = -105;
-                return (
-                  <button
-                    key={handle}
-                    onClick={() => onSelectProfile(handle)}
-                    style={{ transform: `translate(${x}px, ${y}px)` }}
-                    className="absolute z-10 px-2 py-0.5 rounded text-[10px] font-mono bg-[#FBEBEA] border border-[#B83A2E] text-[#B83A2E] line-through transition cursor-pointer shadow-xs"
-                    title={`Severed: @${handle}`}
-                  >
-                    @{handle}
-                  </button>
-                );
-              })}
-            </>
-          )}
-        </div>
-      </div>
     </div>
   );
 };

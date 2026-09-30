@@ -1,5 +1,4 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
 
 interface Props {
   children: ReactNode;
@@ -23,7 +22,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Chronograph component caught error:', error, errorInfo);
+    console.error('Follow Signal component error:', error, errorInfo);
   }
 
   public handleReset = () => {
@@ -33,25 +32,24 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="bg-[#0D1015] border border-red-500/20 rounded-2xl p-8 text-center space-y-4 my-4">
-          <div className="w-12 h-12 rounded-full bg-red-950/40 border border-red-800 flex items-center justify-center text-red-400 mx-auto">
-            <AlertCircle className="w-6 h-6" />
+        <div className="bg-[#0A0A0A] border border-[#1C1C1A] rounded-2xl p-8 text-center space-y-4 my-6 text-[#F5F5F2]">
+          <div className="w-10 h-10 rounded-full bg-[#2A0B0E] border border-[#4A141A] flex items-center justify-center text-[#FF3048] mx-auto text-sm font-mono font-bold">
+            !
           </div>
-          <div className="space-y-1">
-            <h3 className="text-lg font-serif font-bold text-[#F4F1E8]">
-              {this.props.fallbackTitle || 'Display Interruption Recovered'}
+          <div className="space-y-1.5">
+            <h3 className="text-base font-sans font-bold text-[#F5F5F2]">
+              {this.props.fallbackTitle || 'Workspace Display Interrupted'}
             </h3>
-            <p className="text-xs text-zinc-400 font-sans max-w-md mx-auto">
+            <p className="text-xs text-[#9A9A96] font-sans max-w-md mx-auto leading-relaxed">
               {this.props.fallbackMessage ||
-                'A component encountered a rendering issue. Your underlying snapshot data remains intact and secure in your local vault.'}
+                'A component encountered an unexpected render state. Your local relationship snapshots remain safe in storage.'}
             </p>
           </div>
           <button
             onClick={this.handleReset}
-            className="px-4 py-2 bg-[#12161E] hover:bg-[#1A202A] border border-white/10 text-xs font-mono text-[#F4F1E8] rounded-lg transition inline-flex items-center space-x-2"
+            className="px-4 py-2 bg-[#141414] hover:bg-[#1C1C1A] border border-[#262624] text-xs font-mono text-[#F5F5F2] rounded-lg transition cursor-pointer"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Reset Component View</span>
+            Reset Workspace View
           </button>
         </div>
       );

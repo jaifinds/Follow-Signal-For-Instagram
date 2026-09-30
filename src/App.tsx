@@ -24,6 +24,7 @@ import { parseUploadedExport, buildSnapshotFromParseResult } from './lib/exportP
 import { compareSnapshots, generateEventsFromComparison } from './lib/snapshotEngine';
 import { InstagramClient } from './lib/instagramClient';
 import { LoginScreen } from './components/LoginScreen';
+import { SettingsModal } from './components/SettingsModal';
 import { AuthClient } from './lib/authClient';
 import { UserIdentity } from './providers/auth/authTypes';
 
@@ -54,6 +55,7 @@ export default function App() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isConnectOpen, setIsConnectOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isLoadingVerified, setIsLoadingVerified] = useState(false);
 
   // OAuth notifications & Instagram live connection state
@@ -367,8 +369,8 @@ export default function App() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#111111] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-[#FF3048] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -376,7 +378,7 @@ export default function App() {
   // If user is not logged in with Google, has not chosen guest mode, and has no data loaded:
   if (!currentUser && !isGuestMode && !hasData) {
     return (
-      <div className="min-h-screen bg-[#FAF8F5] text-[#111111] font-sans flex flex-col justify-center selection:bg-[#111111] selection:text-white">
+      <div className="min-h-screen bg-black text-[#F5F5F2] font-sans flex flex-col justify-center selection:bg-[#FF3048] selection:text-white">
         <LoginScreen
           onContinueAsGuestArchive={() => setIsGuestMode(true)}
           onOpenImport={() => {
@@ -400,7 +402,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#FAF8F5] text-[#111111] font-sans flex flex-col selection:bg-[#111111] selection:text-white">
+    <div className="min-h-screen bg-black text-[#F5F5F2] font-sans flex flex-col selection:bg-[#FF3048] selection:text-white">
       {/* Modern Top Header */}
       <Header
         hasData={hasData}
@@ -412,6 +414,7 @@ export default function App() {
         onOpenImport={() => setIsImportOpen(true)}
         onOpenConnect={() => setIsConnectOpen(true)}
         onOpenAbout={() => setIsAboutOpen(true)}
+        onOpenSettings={() => setIsSettingsOpen(true)}
         onLogout={handleLogout}
         onResetData={handlePurgeAllData}
       />
@@ -421,8 +424,8 @@ export default function App() {
         <div
           className={`w-full py-2.5 px-4 text-xs font-mono flex items-center justify-between border-b ${
             oauthBanner.type === 'success'
-              ? 'bg-[#EBF5EE] border-[#C3E4CD] text-[#2E7D52]'
-              : 'bg-[#FBEBEA] border-[#E8C2BE] text-[#B83A2E]'
+              ? 'bg-[#0B2416] border-[#164227] text-[#2E9E60]'
+              : 'bg-[#2A0B0E] border-[#4A141A] text-[#FF3048]'
           }`}
         >
           <div className="max-w-7xl mx-auto flex-1 flex items-center justify-between">
@@ -452,8 +455,8 @@ export default function App() {
             /* SCENE 02: MAIN APP SPLIT 3-COLUMN LAYOUT */
             <div className="py-6 sm:py-8 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
               {/* LEFT COLUMN: RELATIONSHIP CATEGORIES SIDEBAR */}
-              <nav className="lg:col-span-3 font-mono text-xs border-b lg:border-b-0 lg:border-r border-[#E5E1D8] pb-4 lg:pb-0 lg:pr-6 flex lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1.5">
-                <span className="text-[10px] tracking-wider text-[#99948B] uppercase hidden lg:block pb-2 font-bold">
+              <nav className="lg:col-span-3 font-mono text-xs border-b lg:border-b-0 lg:border-r border-[#1C1C1A] pb-4 lg:pb-0 lg:pr-6 flex lg:flex-col overflow-x-auto lg:overflow-x-visible gap-1.5">
+                <span className="text-[10px] tracking-wider text-[#5F5F5B] uppercase hidden lg:block pb-2 font-bold">
                   RELATIONSHIPS
                 </span>
 
@@ -464,8 +467,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'OVERVIEW'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span>Overview</span>
@@ -478,8 +481,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'MUTUALS'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Mutuals</span>
@@ -493,8 +496,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'FOLLOWERS'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Followers</span>
@@ -508,8 +511,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'FOLLOWING'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Following</span>
@@ -523,8 +526,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'DONT_FOLLOW_BACK'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Don&apos;t follow back</span>
@@ -538,8 +541,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'YOU_DONT_FOLLOW'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">You don&apos;t follow</span>
@@ -553,8 +556,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'LOST'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Lost</span>
@@ -568,8 +571,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'REQUESTS'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Requests</span>
@@ -583,16 +586,16 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'CLOSE_FRIENDS'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Close friends</span>
                   <span className="text-[11px] opacity-80">{closeFriendsCount}</span>
                 </button>
 
-                <div className="hidden lg:block pt-3 border-t border-[#E5E1D8] w-full mt-2">
-                  <span className="text-[10px] tracking-wider text-[#99948B] uppercase block pb-2 font-bold">
+                <div className="hidden lg:block pt-3 border-t border-[#1C1C1A] w-full mt-2">
+                  <span className="text-[10px] tracking-wider text-[#5F5F5B] uppercase block pb-2 font-bold">
                     TEMPORAL FORENSICS
                   </span>
                 </div>
@@ -604,8 +607,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'TIMELINE'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">Time machine</span>
@@ -619,8 +622,8 @@ export default function App() {
                   }}
                   className={`shrink-0 lg:w-full py-2 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'HISTORY'
-                      ? 'bg-[#111111] text-white font-semibold shadow-xs'
-                      : 'text-[#6E6A63] hover:text-[#111111] hover:bg-[#EFECE6]'
+                      ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624] font-semibold'
+                      : 'text-[#9A9A96] hover:text-[#F5F5F2] hover:bg-[#0D0D0D]'
                   }`}
                 >
                   <span className="mr-2">History</span>
@@ -769,11 +772,11 @@ export default function App() {
                     onSaveNotes={handleSaveProfileNotes}
                   />
                 ) : (
-                  <div className="hidden lg:block p-8 bg-white border border-dashed border-[#D5D0C5] rounded-xl text-center space-y-2">
-                    <p className="font-mono text-xs uppercase tracking-wider text-[#6E6A63] font-bold">
-                      DETAIL INSPECTOR
+                  <div className="hidden lg:block p-8 bg-[#050505] border border-dashed border-[#1C1C1A] rounded-2xl text-center space-y-2">
+                    <p className="font-mono text-xs uppercase tracking-wider text-[#5F5F5B] font-bold">
+                      FORENSIC INSPECTOR
                     </p>
-                    <p className="text-xs text-[#99948B] font-sans">
+                    <p className="text-xs text-[#5F5F5B] font-sans">
                       Select any account to inspect relationship provenance and add private notes.
                     </p>
                   </div>
@@ -814,6 +817,13 @@ export default function App() {
         isOpen={isAboutOpen}
         onClose={() => setIsAboutOpen(false)}
         onPurgeData={handlePurgeAllData}
+      />
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onPurgeData={handlePurgeAllData}
+        totalSnapshots={appState.snapshots.length}
       />
     </div>
   );

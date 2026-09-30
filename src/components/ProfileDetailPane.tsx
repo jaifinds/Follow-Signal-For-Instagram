@@ -1,224 +1,172 @@
 import React, { useState, useEffect } from 'react';
-import { Snapshot, RelationshipEvent, SocialProfile } from '../types';
+import { SocialProfile, RelationshipEvent, Snapshot } from '../types';
 
 interface ProfileDetailPaneProps {
   username: string | null;
-  onClose: () => void;
-  snapshots: Snapshot[];
-  events: RelationshipEvent[];
   profile?: SocialProfile;
+  events: RelationshipEvent[];
+  snapshots?: Snapshot[];
+  onClose: () => void;
+  onToggleStar?: (username: string) => void;
   onSaveNotes?: (username: string, notes: string, tags?: string[], isStarred?: boolean) => void;
+  relationshipStatus?: string;
 }
 
 export const ProfileDetailPane: React.FC<ProfileDetailPaneProps> = ({
   username,
-  onClose,
-  snapshots,
-  events,
   profile,
+  events,
+  snapshots,
+  onClose,
+  onToggleStar,
   onSaveNotes,
+  relationshipStatus = 'Observed Account',
 }) => {
-  if (!username) return null;
-
-  const lower = username.toLowerCase();
-  const latestSnapshot = snapshots.length > 0 ? snapshots[snapshots.length - 1] : null;
-
-  // Determine relationship state
-  const isFollower = latestSnapshot?.followers.some(u => u.toLowerCase() === lower) || false;
-  const isFollowing = latestSnapshot?.following.some(u => u.toLowerCase() === lower) || false;
-  const isCloseFriend = latestSnapshot?.closeFriends?.some(u => u.toLowerCase() === lower) || false;
-
-  let stateLabel = 'NOT CONNECTED';
-  let description = 'Neither account follows the other.';
-  let badgeColor = 'bg-[#F0ECE1] text-[#55514B]';
-
-  if (isFollower && isFollowing) {
-    stateLabel = 'MUTUAL BOND';
-    description = 'You follow them, and they follow you back.';
-    badgeColor = 'bg-[#EBF5EE] text-[#2E7D52]';
-  } else if (isFollowing && !isFollower) {
-    stateLabel = "DOESN'T FOLLOW BACK";
-    description = "You follow this account, but they do not follow you.";
-    badgeColor = 'bg-[#FBF0EE] text-[#8C6338]';
-  } else if (isFollower && !isFollowing) {
-    stateLabel = 'FOLLOWS YOU';
-    description = 'They follow you, but you do not follow them back.';
-    badgeColor = 'bg-[#F5F2EB] text-[#55514B]';
-  }
-
-  // Related events
-  const userEvents = events.filter(e => e.subjectUsername.toLowerCase() === lower);
-
-  // Private notes state
   const [notes, setNotes] = useState(profile?.notes || '');
-  const [isStarred, setIsStarred] = useState(profile?.isStarred || false);
-  const [isSavedNotice, setIsSavedNotice] = useState(false);
+  const [savingNotes, setSavingNotes] = useState(false);
 
   useEffect(() => {
     setNotes(profile?.notes || '');
-    setIsStarred(profile?.isStarred || false);
-  }, [profile, username]);
+  }, [profile]);
 
-  const handleSaveNotes = () => {
-    if (!onSaveNotes) return;
-    onSaveNotes(lower, notes, profile?.tags, isStarred);
-    setIsSavedNotice(true);
-    setTimeout(() => setIsSavedNotice(false), 2000);
-  };
+  if (!username) return null;
 
-  const handleToggleStar = () => {
-    const nextStar = !isStarred;
-    setIsStarred(nextStar);
+  const handleNotesBlur = () => {
     if (onSaveNotes) {
-      onSaveNotes(lower, notes, profile?.tags, nextStar);
+      setSavingNotes(true);
+      onSaveNotes(username, notes);
+      setTimeout(() => setSavingNotes(false), 500);
     }
   };
 
-  const firstObservedDate = profile?.firstSeenAt
-    ? new Date(profile.firstSeenAt).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : 'Archive Import';
-
-  const lastObservedDate = profile?.lastSeenAt
-    ? new Date(profile.lastSeenAt).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : 'Present Snapshot';
+  const accountEvents = events.filter(
+    e => e.subjectUsername?.toLowerCase() === username.toLowerCase()
+  );
 
   return (
-    <div className="bg-white border border-[#E5E1D8] rounded-2xl p-5 sm:p-6 space-y-6 shadow-sm animate-fade-in">
-      {/* Header with Close and Star */}
-      <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-3">
-        <span className="text-[11px] font-mono tracking-wider text-[#6E6A63] uppercase">
-          PERSON DETAIL
-        </span>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={handleToggleStar}
-            className={`text-base cursor-pointer transition ${
-              isStarred ? 'text-[#8C6338]' : 'text-[#D5D0C5] hover:text-[#8C6338]'
-            }`}
-            title={isStarred ? 'Starred account' : 'Star this account'}
-          >
-            ★
-          </button>
-          <button
-            onClick={onClose}
-            className="text-xs font-mono text-[#6E6A63] hover:text-[#111111] transition cursor-pointer px-2 py-0.5 rounded hover:bg-[#F3EFE8]"
-          >
-            Close ✕
-          </button>
+    <aside className="w-full lg:w-96 bg-[#080808] border-t lg:border-t-0 lg:border-l border-[#1C1C1A] flex flex-col h-full animate-fade-in text-[#F5F5F2] select-none">
+      {/* Dossier Header */}
+      <div className="p-5 border-b border-[#1C1C1A] flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <span className="w-2 h-2 rounded-full bg-[#FF3048]" />
+          <span className="text-[11px] font-mono tracking-widest text-[#5F5F5B] uppercase">
+            FORENSIC DOSSIER
+          </span>
         </div>
+        <button
+          onClick={onClose}
+          className="text-xs font-mono text-[#5F5F5B] hover:text-[#F5F5F2] transition cursor-pointer"
+        >
+          [Close]
+        </button>
       </div>
 
-      {/* Account Identity */}
-      <div className="flex items-start space-x-3">
-        <div className="w-12 h-12 rounded-full bg-[#111111] text-white flex items-center justify-center font-mono text-sm font-bold shrink-0">
-          {lower.slice(0, 2).toUpperCase()}
-        </div>
-        <div>
-          <h3 className="text-xl font-sans font-bold text-[#111111] tracking-tight">
-            @{lower}
-          </h3>
-          {profile?.displayName && (
-            <p className="text-xs text-[#6E6A63] font-sans">{profile.displayName}</p>
-          )}
-          <div className="pt-1.5 flex items-center gap-2">
-            <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded ${badgeColor}`}>
-              {stateLabel}
-            </span>
-            {isCloseFriend && (
-              <span className="text-[10px] font-mono text-[#2E7D52] bg-[#EBF5EE] px-2 py-0.5 rounded font-semibold">
-                Close friend
-              </span>
+      <div className="p-6 space-y-7 overflow-y-auto flex-1">
+        {/* Account Identity */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-2xl font-mono font-bold text-[#F5F5F2] tracking-tight">
+              @{username}
+            </h3>
+
+            {onToggleStar && (
+              <button
+                onClick={() => onToggleStar(username)}
+                className="text-lg transition cursor-pointer p-1"
+                title={profile?.isStarred ? 'Unstar profile' : 'Star profile'}
+              >
+                <span className={profile?.isStarred ? 'text-[#FF3048]' : 'text-[#262624] hover:text-[#5F5F5B]'}>
+                  ★
+                </span>
+              </button>
             )}
           </div>
-          <p className="text-xs text-[#6E6A63] font-sans mt-2 leading-relaxed">
-            {description}
-          </p>
-        </div>
-      </div>
 
-      {/* Observation Provenance */}
-      <div className="bg-[#FAF8F5] border border-[#E5E1D8] rounded-xl p-3.5 space-y-2 font-mono text-xs text-[#6E6A63]">
-        <div className="flex justify-between">
-          <span>First observed</span>
-          <span className="text-[#111111] font-medium">{firstObservedDate}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Last observed</span>
-          <span className="text-[#111111] font-medium">{lastObservedDate}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Snapshots detected</span>
-          <span className="text-[#111111] font-medium">{snapshots.length}</span>
-        </div>
-      </div>
-
-      {/* Relationship History Timeline */}
-      {userEvents.length > 0 && (
-        <div className="space-y-2.5 border-t border-[#F0ECE1] pt-4">
-          <span className="text-[11px] font-mono text-[#6E6A63] uppercase tracking-wider block font-semibold">
-            RECORDED TIMELINE EVENTS
-          </span>
-          <div className="space-y-2 font-mono text-xs">
-            {userEvents.map(evt => {
-              const d = new Date(evt.effectiveAt).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-              });
-              return (
-                <div key={evt.id} className="p-2 bg-[#FAF8F5] rounded-md flex items-baseline space-x-2 text-[#111111]">
-                  <span className="text-[#99948B] text-[11px] shrink-0 font-bold">{d}</span>
-                  <span className="text-xs leading-snug">{evt.summary}</span>
-                </div>
-              );
-            })}
+          <div className="inline-flex items-center px-2.5 py-1 rounded bg-[#0D0D0D] border border-[#1C1C1A] text-[10px] font-mono uppercase tracking-wider text-[#9A9A96]">
+            {relationshipStatus}
           </div>
         </div>
-      )}
 
-      {/* Private Notes */}
-      <div className="space-y-2 border-t border-[#F0ECE1] pt-4">
-        <label className="text-[11px] font-mono text-[#6E6A63] uppercase tracking-wider block font-semibold">
-          PRIVATE NOTES
-        </label>
-        <textarea
-          value={notes}
-          onChange={e => setNotes(e.target.value)}
-          placeholder="Add private context, how you know them, or relationship reminders..."
-          rows={3}
-          className="w-full bg-[#FAF9F7] border border-[#D5D0C5] rounded-lg p-2.5 text-xs font-mono text-[#111111] focus:outline-none focus:border-[#111111] focus:bg-white placeholder-[#99948B] transition"
-        />
-        <div className="flex items-center justify-between">
-          <button
-            onClick={handleSaveNotes}
-            className="px-3.5 py-1.5 bg-[#111111] hover:bg-[#2A2A2A] text-white text-xs font-sans font-medium rounded-md transition cursor-pointer"
-          >
-            Save notes
-          </button>
-          {isSavedNotice && (
-            <span className="text-[11px] font-mono text-[#2E7D52] font-semibold">Saved.</span>
+        {/* Forensic Metadata Strip */}
+        <div className="grid grid-cols-2 gap-2 text-xs font-mono border-t border-b border-[#1C1C1A] py-4">
+          <div className="p-3 bg-[#050505] rounded-lg border border-[#141414]">
+            <span className="text-[10px] text-[#5F5F5B] block uppercase">First Observed</span>
+            <span className="text-[#F5F5F2] mt-0.5 block">
+              {profile?.firstSeenAt
+                ? new Date(profile.firstSeenAt).toISOString().split('T')[0]
+                : 'Current Baseline'}
+            </span>
+          </div>
+
+          <div className="p-3 bg-[#050505] rounded-lg border border-[#141414]">
+            <span className="text-[10px] text-[#5F5F5B] block uppercase">Recorded Changes</span>
+            <span className="text-[#F5F5F2] mt-0.5 block">
+              {accountEvents.length} {accountEvents.length === 1 ? 'event' : 'events'}
+            </span>
+          </div>
+        </div>
+
+        {/* Private Local Notes */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <label className="text-[11px] font-mono uppercase text-[#5F5F5B] tracking-wider">
+              Private Dossier Notes
+            </label>
+            {savingNotes && (
+              <span className="text-[10px] font-mono text-[#2E9E60]">Saved</span>
+            )}
+          </div>
+          <textarea
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            onBlur={handleNotesBlur}
+            placeholder="Add private observations (stored locally on this device)..."
+            rows={3}
+            className="w-full bg-[#050505] border border-[#1C1C1A] focus:border-[#FF3048] rounded-xl p-3 text-xs font-mono text-[#F5F5F2] focus:outline-none placeholder-[#3A3A36] transition resize-none"
+          />
+        </div>
+
+        {/* Recorded Event History */}
+        <div className="space-y-3">
+          <label className="text-[11px] font-mono uppercase text-[#5F5F5B] tracking-wider block">
+            State Transitions
+          </label>
+
+          {accountEvents.length > 0 ? (
+            <div className="space-y-2">
+              {accountEvents.map((evt, i) => (
+                <div
+                  key={evt.id || i}
+                  className="p-3 bg-[#050505] border border-[#141414] rounded-lg text-xs font-mono space-y-1"
+                >
+                  <div className="flex items-center justify-between text-[10px] text-[#5F5F5B]">
+                    <span>{new Date(evt.effectiveAt || evt.detectedAt).toISOString().split('T')[0]}</span>
+                    <span className="text-[#9A9A96]">{evt.eventType}</span>
+                  </div>
+                  <p className="text-xs text-[#F5F5F2] font-sans">{evt.summary}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs font-mono text-[#5F5F5B] italic">
+              No state transitions recorded for this handle across available snapshots.
+            </p>
           )}
         </div>
-      </div>
 
-      {/* External Instagram Link */}
-      <div className="pt-2 border-t border-[#F0ECE1]">
-        <a
-          href={`https://instagram.com/${lower}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block w-full py-2.5 bg-[#FAF8F5] hover:bg-[#EFECE6] border border-[#D5D0C5] text-center font-sans text-xs font-semibold text-[#111111] rounded-lg transition cursor-pointer"
-        >
-          Open Instagram profile ↗
-        </a>
+        {/* Outbound Link */}
+        <div className="pt-2">
+          <a
+            href={`https://instagram.com/${username}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-2.5 px-3 bg-[#0D0D0D] hover:bg-[#141414] border border-[#1C1C1A] hover:border-[#262624] text-[#F5F5F2] rounded-xl text-xs font-mono flex items-center justify-center space-x-2 transition"
+          >
+            <span>Open @{username} on Instagram</span>
+            <span className="text-[#5F5F5B]">↗</span>
+          </a>
+        </div>
       </div>
-    </div>
+    </aside>
   );
 };

@@ -13,7 +13,7 @@ export const HistoryEditorialView: React.FC<HistoryEditorialViewProps> = ({
   // Group events by date
   const groupedByDate: { [dateStr: string]: RelationshipEvent[] } = {};
   for (const evt of events) {
-    const d = new Date(evt.effectiveAt);
+    const d = new Date(evt.effectiveAt || evt.detectedAt);
     const dateKey = d
       .toLocaleDateString('en-US', {
         month: 'short',
@@ -31,117 +31,126 @@ export const HistoryEditorialView: React.FC<HistoryEditorialViewProps> = ({
   const dateKeys = Object.keys(groupedByDate);
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Header */}
-      <div className="bg-white border border-[#E5E1D8] rounded-xl p-5 shadow-sm space-y-1">
-        <span className="text-[11px] font-mono tracking-wider text-[#6E6A63] uppercase">
-          EVENT TIMELINE LEDGER
+    <div className="space-y-8 animate-fade-in select-none text-[#F5F5F2]">
+      {/* Title & Metadata */}
+      <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-4 border-b border-[#1C1C1A] pb-6">
+        <div>
+          <div className="text-[11px] font-mono tracking-widest uppercase text-[#5F5F5B]">
+            CHRONOLOGICAL LEDGER
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-sans font-bold text-[#F5F5F2] tracking-tight mt-1">
+            Relationship History
+          </h2>
+          <p className="text-xs font-sans text-[#9A9A96] mt-1">
+            Audit trail of additions, severances, and state changes recorded between check-ins.
+          </p>
+        </div>
+
+        <span className="text-xs font-mono text-[#5F5F5B]">
+          {events.length} {events.length === 1 ? 'recorded event' : 'recorded events'}
         </span>
-        <h2 className="text-2xl font-sans font-bold text-[#111111] tracking-tight">
-          Relationship history.
-        </h2>
-        <p className="text-xs font-sans text-[#6E6A63]">
-          Chronological additions, severances, and state changes recorded between check-ins.
-        </p>
       </div>
 
-      {/* Date-grouped Event Cards */}
-      <div className="space-y-4">
+      {/* Date Groups */}
+      <div className="space-y-6">
         {dateKeys.map(dateStr => {
           const dateEvents = groupedByDate[dateStr];
 
-          // Compute summary stats for the date
           const positiveCount = dateEvents.filter(
             e =>
               e.eventType === 'NEW_FOLLOWER' ||
-              e.eventType === 'FOLLOWED_YOU' ||
               e.eventType === 'BECAME_MUTUAL'
           ).length;
 
           const negativeCount = dateEvents.filter(
             e =>
               e.eventType === 'LOST_FOLLOWER' ||
-              e.eventType === 'NO_LONGER_MUTUAL'
+              e.eventType === 'UNFOLLOWED'
           ).length;
 
           return (
             <div
               key={dateStr}
-              className="bg-white border border-[#E5E1D8] rounded-xl p-5 shadow-sm space-y-3"
+              className="bg-[#050505] border border-[#1C1C1A] rounded-xl overflow-hidden divide-y divide-[#141414]"
             >
-              {/* Date Header Strip */}
-              <div className="flex items-center justify-between border-b border-[#F0ECE1] pb-2.5">
-                <span className="font-mono text-xs font-bold text-[#111111] tracking-wider">
+              {/* Date Header */}
+              <div className="p-4 sm:px-6 bg-[#080808] flex items-center justify-between text-xs font-mono">
+                <span className="font-semibold text-[#F5F5F2] tracking-wider">
                   {dateStr}
                 </span>
-
-                <div className="flex items-center space-x-2 text-xs font-mono">
+                <div className="flex items-center space-x-3 text-[11px]">
                   {positiveCount > 0 && (
-                    <span className="px-2 py-0.5 rounded bg-[#EBF5EE] text-[#2E7D52] font-semibold">
-                      +{positiveCount} new
-                    </span>
+                    <span className="text-[#2E9E60]">+{positiveCount} formed</span>
                   )}
                   {negativeCount > 0 && (
-                    <span className="px-2 py-0.5 rounded bg-[#FBEBEA] text-[#B83A2E] font-semibold">
-                      −{negativeCount} lost
-                    </span>
+                    <span className="text-[#FF3048]">-{negativeCount} severed</span>
                   )}
                 </div>
               </div>
 
-              {/* Event rows */}
-              <div className="divide-y divide-[#F0ECE1]">
-                {dateEvents.map(evt => {
-                  const isPositive =
-                    evt.eventType === 'NEW_FOLLOWER' ||
-                    evt.eventType === 'FOLLOWED_YOU' ||
-                    evt.eventType === 'BECAME_MUTUAL';
-                  const isNegative =
-                    evt.eventType === 'LOST_FOLLOWER' ||
-                    evt.eventType === 'NO_LONGER_MUTUAL';
+              {/* Individual Event Rows */}
+              {dateEvents.map((evt, idx) => {
+                const targetUser = evt.subjectUsername;
+                const isLost = evt.eventType === 'LOST_FOLLOWER';
+                const isNew = evt.eventType === 'NEW_FOLLOWER';
+                const isMutual = evt.eventType === 'BECAME_MUTUAL';
 
-                  return (
-                    <div
-                      key={evt.id}
-                      onClick={() => onSelectProfile(evt.subjectUsername)}
-                      className="py-3 px-2 flex items-center justify-between hover:bg-[#FAF8F5] rounded-md transition cursor-pointer"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <span
-                          className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            isPositive
-                              ? 'bg-[#EBF5EE] text-[#2E7D52]'
-                              : isNegative
-                              ? 'bg-[#FBEBEA] text-[#B83A2E]'
-                              : 'bg-[#F0ECE1] text-[#6E6A63]'
-                          }`}
-                        >
-                          {isPositive ? '+' : isNegative ? '−' : '·'}
-                        </span>
-                        <div>
-                          <span className="font-mono text-xs font-bold text-[#111111]">
-                            @{evt.subjectUsername}
-                          </span>
-                          <span className="text-xs text-[#6E6A63] font-sans ml-2">
+                return (
+                  <div
+                    key={evt.id || idx}
+                    onClick={() => targetUser && onSelectProfile(targetUser)}
+                    className="p-3.5 sm:px-6 flex items-center justify-between hover:bg-[#0A0A0A] transition cursor-pointer group"
+                  >
+                    <div className="flex items-center space-x-3.5 truncate">
+                      <span
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono font-bold shrink-0 ${
+                          isLost
+                            ? 'bg-[#2A0B0E] text-[#FF3048] border border-[#4A141A]'
+                            : isNew
+                            ? 'bg-[#0B2416] text-[#2E9E60] border border-[#164227]'
+                            : isMutual
+                            ? 'bg-[#141414] text-[#F5F5F2] border border-[#262624]'
+                            : 'bg-[#0D0D0D] text-[#5F5F5B]'
+                        }`}
+                      >
+                        {isLost ? '−' : isNew ? '+' : isMutual ? '↔' : '○'}
+                      </span>
+
+                      <div className="truncate">
+                        <div className="flex items-center space-x-2">
+                          {targetUser && (
+                            <span className="font-mono text-xs font-semibold text-[#F5F5F2] group-hover:text-white">
+                              @{targetUser}
+                            </span>
+                          )}
+                          <span className="text-xs text-[#9A9A96] font-sans">
                             {evt.summary}
                           </span>
                         </div>
                       </div>
-
-                      <span className="text-xs font-mono text-[#6E6A63] hover:text-[#111111]">
-                        Inspect →
-                      </span>
                     </div>
-                  );
-                })}
-              </div>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <span className="text-[10px] font-mono text-[#5F5F5B] uppercase">
+                        {evt.eventType}
+                      </span>
+                      {targetUser && (
+                        <span className="text-xs font-mono text-[#5F5F5B] group-hover:text-[#F5F5F2] transition">
+                          →
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           );
         })}
 
         {dateKeys.length === 0 && (
-          <div className="bg-white border border-[#E5E1D8] rounded-xl p-12 text-center text-xs font-mono text-[#99948B]">
-            No historical diff events recorded yet. Future check-ins will log all changes here.
+          <div className="py-20 text-center font-mono text-xs text-[#5F5F5B] space-y-2">
+            <p className="font-semibold text-[#9A9A96]">No historical events recorded yet.</p>
+            <p>Import a second snapshot or simulate a check-in to generate audit trail ledger events.</p>
           </div>
         )}
       </div>
