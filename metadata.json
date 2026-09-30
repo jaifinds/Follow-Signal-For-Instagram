@@ -1,0 +1,6 @@
+{
+  "name": "Chronograph — Instagram Relationship Intelligence",
+  "description": "Chronograph turns your Instagram snapshots and exports into an investigative social graph time machine. Track followers, unfollows, mutual changes, and relationship history over time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
