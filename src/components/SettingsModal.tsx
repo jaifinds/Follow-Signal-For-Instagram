@@ -67,17 +67,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#141414] border border-white/[0.08] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 min-w-0"
+        className="w-full max-w-lg bg-[#131418] border border-white/[0.08] rounded-xl shadow-2xl p-6 sm:p-8 space-y-6 min-w-0"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-          <div className="text-xs font-mono tracking-wider text-neutral-400 uppercase">
-            Settings & Storage
+          <div className="text-[10px] font-mono tracking-widest text-[#8E909D] uppercase">
+            Vault Configuration & Storage
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer p-1"
+            className="text-xs font-mono text-[#8E909D] hover:text-white transition cursor-pointer p-1"
           >
             &times; Close
           </button>
@@ -87,109 +87,100 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="space-y-4 text-xs font-sans">
           {/* Storage & Local Data */}
           <div className="space-y-2">
-            <div className="text-xs font-mono tracking-wider uppercase text-neutral-400">
+            <div className="text-[10px] font-mono tracking-widest uppercase text-[#8E909D]">
               Local Device Storage
             </div>
-            <div className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl flex items-center justify-between font-mono">
+            <div className="p-4 bg-[#0C0D0F] border border-white/[0.08] rounded-lg flex items-center justify-between font-mono">
               <div>
-                <span className="text-xs text-white font-medium block">IndexedDB Sandbox</span>
-                <span className="text-xs text-neutral-500">
-                  {totalSnapshots} {totalSnapshots === 1 ? 'snapshot' : 'snapshots'} stored
+                <span className="text-xs text-white font-medium block">IndexedDB Vault Sandbox</span>
+                <span className="text-[11px] text-[#8E909D]">
+                  {totalSnapshots} {totalSnapshots === 1 ? 'checkpoint' : 'checkpoints'} stored
                 </span>
               </div>
-              <span className="text-xs text-white bg-neutral-800 px-3 py-1.5 rounded border border-neutral-700 tabular-nums">
+              <span className="text-xs text-white bg-[#1A1C22] px-3 py-1.5 rounded border border-white/[0.08] tabular-nums">
                 {storageEstimate}
               </span>
             </div>
           </div>
 
-          {/* Analysis Preferences */}
-          <div className="space-y-2 pt-2">
-            <div className="text-xs font-mono tracking-wider uppercase text-neutral-400">
-              Preferences
-            </div>
-            
-            <div className="flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-xl">
-              <div className="pr-4">
-                <span className="text-xs font-medium text-white block">
-                  Automatic Check-in Comparison
-                </span>
-                <span className="text-xs text-neutral-500 leading-relaxed">
-                  Automatically calculate differences when a second archive is added.
-                </span>
-              </div>
-              <button
-                onClick={handleToggleAutoCompare}
-                className={`w-11 h-6 rounded-full transition cursor-pointer p-0.5 relative shrink-0 ${
-                  prefs.autoCompareSnapshots ? 'bg-white' : 'bg-neutral-800'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full transition transform ${
-                    prefs.autoCompareSnapshots ? 'translate-x-5 bg-black' : 'translate-x-0 bg-neutral-400'
-                  }`}
-                />
-              </button>
+          {/* Preferences */}
+          <div className="space-y-2">
+            <div className="text-[10px] font-mono tracking-widest uppercase text-[#8E909D]">
+              Evaluation Rules
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-neutral-900 border border-neutral-800 rounded-xl">
-              <div className="pr-4">
-                <span className="text-xs font-medium text-white block">
-                  Source Confidence Badges
-                </span>
-                <span className="text-xs text-neutral-500 leading-relaxed">
-                  Show badges distinguishing export archives from API syncs.
-                </span>
-              </div>
-              <button
-                onClick={handleToggleBadges}
-                className={`w-11 h-6 rounded-full transition cursor-pointer p-0.5 relative shrink-0 ${
-                  prefs.showConfidenceBadges ? 'bg-white' : 'bg-neutral-800'
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 rounded-full transition transform ${
-                    prefs.showConfidenceBadges ? 'translate-x-5 bg-black' : 'translate-x-0 bg-neutral-400'
-                  }`}
+            <div className="divide-y divide-white/[0.06] border border-white/[0.08] rounded-lg bg-[#0C0D0F]">
+              <div className="p-3.5 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-white font-medium block">Auto-diff new checkpoints</span>
+                  <span className="text-[11px] text-[#8E909D]">
+                    Automatically compare newly imported archives against preceding snapshots.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.autoCompareSnapshots}
+                  onChange={handleToggleAutoCompare}
+                  className="accent-white cursor-pointer w-4 h-4"
                 />
-              </button>
+              </div>
+
+              <div className="p-3.5 flex items-center justify-between">
+                <div>
+                  <span className="text-xs text-white font-medium block">Verified integrity badges</span>
+                  <span className="text-[11px] text-[#8E909D]">
+                    Display verification indicators next to accounts with confirmed reciprocal status.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={prefs.showConfidenceBadges}
+                  onChange={handleToggleBadges}
+                  className="accent-white cursor-pointer w-4 h-4"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Footer Actions */}
-        <div className="pt-3 border-t border-white/[0.08] flex items-center justify-between">
-          {confirmPurge ? (
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => {
-                  onPurgeData();
-                  setConfirmPurge(false);
-                  onClose();
-                }}
-                className="py-1.5 px-3 bg-red-600 text-white text-xs font-mono rounded transition cursor-pointer"
-              >
-                Confirm Delete All Data
-              </button>
-              <button
-                onClick={() => setConfirmPurge(false)}
-                className="py-1.5 px-3 bg-neutral-800 text-white text-xs font-mono rounded transition cursor-pointer"
-              >
-                Cancel
-              </button>
+          {/* Purge Local Data */}
+          <div className="pt-2">
+            <div className="p-4 bg-[#D94444]/10 border border-[#D94444]/25 rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs text-white font-medium block">Reset Vault Storage</span>
+                <span className="text-[11px] text-[#8E909D]">
+                  Permanently deletes all locally stored snapshots, notes, and activity history.
+                </span>
+              </div>
+
+              {confirmPurge ? (
+                <div className="flex items-center space-x-2 shrink-0">
+                  <button
+                    onClick={() => {
+                      onPurgeData();
+                      setConfirmPurge(false);
+                      onClose();
+                    }}
+                    className="px-3 py-1.5 bg-[#D94444] text-white text-xs font-mono rounded cursor-pointer"
+                  >
+                    Confirm Wipe
+                  </button>
+                  <button
+                    onClick={() => setConfirmPurge(false)}
+                    className="px-3 py-1.5 bg-[#1A1C22] text-white text-xs font-mono rounded cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmPurge(true)}
+                  className="px-3 py-1.5 bg-transparent border border-[#D94444]/40 hover:bg-[#D94444]/20 text-[#D94444] text-xs font-mono rounded transition cursor-pointer shrink-0"
+                >
+                  Wipe Data
+                </button>
+              )}
             </div>
-          ) : (
-            <button
-              onClick={() => setConfirmPurge(true)}
-              className="text-xs font-mono text-red-400 hover:underline transition cursor-pointer"
-            >
-              Wipe Local Records
-            </button>
-          )}
-
-          <span className="text-xs font-mono text-neutral-500">
-            Follow Signal
-          </span>
+          </div>
         </div>
       </div>
     </div>

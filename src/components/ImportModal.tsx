@@ -2,7 +2,6 @@ import React, { useState, useRef } from 'react';
 import { Snapshot, RelationshipEvent } from '../types';
 import { parseUploadedExport, buildSnapshotFromParseResult } from '../lib/exportParser';
 import { compareSnapshots, generateEventsFromComparison } from '../lib/snapshotEngine';
-import { createOwnerExportZipBlob } from '../fixtures/ownerExportZip';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -30,7 +29,6 @@ export const ImportModal: React.FC<ImportModalProps> = ({
   if (!isOpen) return null;
 
   const processFile = async (fileOrBlob: File | Blob, fileName: string) => {
-    // Security check: File size limit to prevent memory exhaustion
     if (fileOrBlob.size > MAX_ARCHIVE_SIZE_BYTES) {
       setErrorMsg(`Archive exceeds maximum supported size (100 MB). Size was ${(fileOrBlob.size / (1024 * 1024)).toFixed(1)} MB.`);
       return;
@@ -42,7 +40,7 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     setStageDescription('Reading archive in browser memory sandbox...');
 
     try {
-      const parseResult = await parseUploadedExport(fileOrBlob, (msg, pct) => {
+      const parseResult = await parseUploadedExport(fileOrBlob, (_msg, pct) => {
         if (pct < 40) {
           setCurrentStage('PARSING');
           setStageDescription('Decompressing archive and indexing relationship files...');
@@ -138,64 +136,53 @@ export const ImportModal: React.FC<ImportModalProps> = ({
     }
   };
 
-  const handleLoadBaselineFixture = async () => {
-    try {
-      setIsProcessing(true);
-      const zipBlob = await createOwnerExportZipBlob();
-      await processFile(zipBlob, 'verified_baseline_export.zip');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Failed to load baseline dataset.');
-      setIsProcessing(false);
-    }
-  };
-
   return (
     <div
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in select-none"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#141414] border border-white/[0.08] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-6 text-white min-w-0"
+        className="w-full max-w-lg bg-[#131418] border border-white/[0.08] rounded-xl shadow-2xl p-6 sm:p-8 space-y-6 text-white min-w-0"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-          <div className="text-xs font-mono tracking-wider text-neutral-400 uppercase">
-            Archive Import
+          <div className="text-[10px] font-mono tracking-widest text-[#8E909D] uppercase">
+            Archive Vault Ingestion
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer p-1"
+            className="text-xs font-mono text-[#8E909D] hover:text-white transition cursor-pointer p-1"
           >
             &times; Close
           </button>
         </div>
 
         {/* Process Stages Strip */}
-        <div className="grid grid-cols-4 gap-2 text-center font-mono text-xs border-b border-white/[0.08] pb-4">
-          <div className={currentStage === 'READING' ? 'text-white font-bold' : currentStage !== 'IDLE' ? 'text-neutral-300' : 'text-neutral-600'}>
+        <div className="grid grid-cols-4 gap-2 text-center font-mono text-[11px] border-b border-white/[0.08] pb-4">
+          <div className={currentStage === 'READING' ? 'text-white font-semibold' : currentStage !== 'IDLE' ? 'text-[#D1D3DC]' : 'text-[#565866]'}>
             01. Read
           </div>
-          <div className={currentStage === 'PARSING' ? 'text-white font-bold' : currentStage === 'RESOLVING' || currentStage === 'BUILDING' ? 'text-neutral-300' : 'text-neutral-600'}>
+          <div className={currentStage === 'PARSING' ? 'text-white font-semibold' : currentStage === 'RESOLVING' || currentStage === 'BUILDING' ? 'text-[#D1D3DC]' : 'text-[#565866]'}>
             02. Parse
           </div>
-          <div className={currentStage === 'RESOLVING' ? 'text-white font-bold' : currentStage === 'BUILDING' ? 'text-neutral-300' : 'text-neutral-600'}>
+          <div className={currentStage === 'RESOLVING' ? 'text-white font-semibold' : currentStage === 'BUILDING' ? 'text-[#D1D3DC]' : 'text-[#565866]'}>
             03. Resolve
           </div>
-          <div className={currentStage === 'BUILDING' ? 'text-white font-bold' : 'text-neutral-600'}>
-            04. Snapshot
+          <div className={currentStage === 'BUILDING' ? 'text-white font-semibold' : 'text-[#565866]'}>
+            04. Vault
           </div>
         </div>
 
         {/* Ingestion Target or Active Processing View */}
         {isProcessing ? (
-          <div className="py-14 text-center space-y-4 bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+          <div className="py-14 text-center space-y-4 bg-[#0C0D0F] border border-white/[0.08] rounded-lg p-6">
             <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
             <div className="space-y-1">
-              <p className="text-xs font-mono font-medium text-white uppercase tracking-wider">
-                In-Browser Processing
+              <p className="text-xs font-mono font-medium text-white uppercase tracking-widest">
+                Local Memory Evaluation
               </p>
-              <p className="text-xs font-sans text-neutral-400">
+              <p className="text-xs text-[#8E909D]">
                 {stageDescription}
               </p>
             </div>
@@ -206,25 +193,28 @@ export const ImportModal: React.FC<ImportModalProps> = ({
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`py-12 px-6 border border-dashed rounded-xl text-center cursor-pointer transition ${
+            className={`py-12 px-6 border border-dashed rounded-lg text-center cursor-pointer transition ${
               isDragging
-                ? 'border-white bg-neutral-900'
-                : 'border-neutral-700 hover:border-neutral-500 bg-neutral-950'
+                ? 'border-white bg-[#1A1C22]'
+                : 'border-white/20 hover:border-white/40 bg-[#0C0D0F]'
             }`}
           >
             <input
               type="file"
               ref={fileInputRef}
               onChange={handleFileInputChange}
-              accept=".zip,.json,.html,.csv"
+              accept=".zip,.json"
               className="hidden"
             />
             <div className="space-y-2">
-              <p className="text-sm font-sans font-medium text-white">
-                Select your Instagram export (ZIP or JSON)
+              <svg className="w-8 h-8 mx-auto text-[#8E909D]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-xs font-medium text-white tracking-wide">
+                Drop your official Instagram export (ZIP or JSON)
               </p>
-              <p className="text-xs font-sans text-neutral-500">
-                Drag and drop here, or click to browse. Max 100 MB.
+              <p className="text-[11px] text-[#565866]">
+                Click to browse files. Evaluated 100% locally in your browser.
               </p>
             </div>
           </div>
@@ -232,22 +222,15 @@ export const ImportModal: React.FC<ImportModalProps> = ({
 
         {/* Error Message if Any */}
         {errorMsg && (
-          <div className="p-3 bg-red-950/40 border border-red-500/40 rounded-lg text-xs font-sans text-red-300 text-left">
+          <div className="p-3 bg-[#D94444]/10 border border-[#D94444]/30 rounded-lg text-xs text-[#D94444] text-left">
             {errorMsg}
           </div>
         )}
 
-        {/* Footer Actions */}
-        <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs font-mono text-neutral-400">
-          <span>Formats: ZIP, JSON, HTML, CSV</span>
-
-          <button
-            onClick={handleLoadBaselineFixture}
-            disabled={isProcessing}
-            className="text-white hover:underline transition cursor-pointer disabled:opacity-50"
-          >
-            Load sample dataset (163 accounts) &rarr;
-          </button>
+        {/* Footer Guidance */}
+        <div className="pt-2 flex items-center justify-between text-[11px] font-mono text-[#8E909D]">
+          <span>Supported: ZIP, JSON</span>
+          <span>Zero Server Uploads</span>
         </div>
       </div>
     </div>

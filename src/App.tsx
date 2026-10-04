@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   AppState,
   loadAppState,
-  loadStateFromIndexedDB,
   saveProfileMetadata,
   saveUserSnapshot,
   purgeAllUserData,
@@ -19,10 +18,6 @@ import { TimeMachineView } from './components/TimeMachineView';
 import { HistoryEditorialView } from './components/HistoryEditorialView';
 import { ProfileDetailPane } from './components/ProfileDetailPane';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { createOwnerExportZipBlob, createSecondCheckInZipBlob } from './fixtures/ownerExportZip';
-import { parseUploadedExport, buildSnapshotFromParseResult } from './lib/exportParser';
-import { compareSnapshots, generateEventsFromComparison } from './lib/snapshotEngine';
-import { InstagramClient } from './lib/instagramClient';
 import { LoginScreen } from './components/LoginScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { AuthClient } from './lib/authClient';
@@ -57,16 +52,15 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMobileMoreOpen, setIsMobileMoreOpen] = useState(false);
-  const [isLoadingVerified, setIsLoadingVerified] = useState(false);
 
   // OAuth notifications & Instagram live connection state
   const [oauthBanner, setOauthBanner] = useState<{
     type: 'success' | 'error';
     message: string;
   } | null>(null);
-  const [connectedAccountUsername, setConnectedAccountUsername] = useState<string | null>(null);
+  const [connectedAccountUsername] = useState<string | null>(null);
 
-  // Check Follow Signal user session & Google OAuth returns on mount
+  // Check Follow Signal user session on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const authStatus = params.get('auth');
@@ -98,74 +92,6 @@ export default function App() {
     setIsGuestMode(false);
   };
 
-  // Keyboard accessibility: Escape to deselect profile or close modals
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (selectedUsername) setSelectedUsername(null);
-        else if (isImportOpen) setIsImportOpen(false);
-        else if (isConnectOpen) setIsConnectOpen(false);
-        else if (isAboutOpen) setIsAboutOpen(false);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedUsername, isImportOpen, isConnectOpen, isAboutOpen]);
-
-  // Check Instagram connection status & handle OAuth redirects on mount
-  useEffect(() => {
-    // 1. Check server status
-    InstagramClient.getStatus()
-      .then(status => {
-        if (status.connected && status.account) {
-          setConnectedAccountUsername(status.account.username);
-        }
-      })
-      .catch(err => {
-        console.warn('Instagram server status check:', err);
-      });
-
-    // 2. Check URL query parameters for OAuth returns
-    const params = new URLSearchParams(window.location.search);
-    const igConnected = params.get('instagram_connected');
-    const igUsername = params.get('username');
-    const igError = params.get('instagram_error');
-
-    if (igConnected === 'true') {
-      const user = igUsername || 'connected_account';
-      setConnectedAccountUsername(user);
-      setOauthBanner({
-        type: 'success',
-        message: `Connected to Instagram as @${user} via official Meta Graph API.`,
-      });
-      window.history.replaceState({}, '', window.location.pathname);
-      setTimeout(() => setOauthBanner(null), 7000);
-    } else if (igError) {
-      setOauthBanner({
-        type: 'error',
-        message: `Instagram connection error: ${decodeURIComponent(igError)}`,
-      });
-      window.history.replaceState({}, '', window.location.pathname);
-    }
-  }, []);
-
-  // Hydrate from IndexedDB if in USER mode
-  useEffect(() => {
-    if (appState.mode === 'USER') {
-      loadStateFromIndexedDB().then(dbState => {
-        if (dbState.snapshots && dbState.snapshots.length > 0) {
-          setAppState(prev => ({
-            ...prev,
-            snapshots: dbState.snapshots || prev.snapshots,
-            events: dbState.events || prev.events,
-            profiles: dbState.profiles || prev.profiles,
-          }));
-        }
-      });
-    }
-  }, [appState.mode]);
-
-  // Handle saving profile notes
   const handleSaveProfileNotes = (
     username: string,
     notes: string,
@@ -173,143 +99,67 @@ export default function App() {
     isStarred?: boolean
   ) => {
     const lower = username.toLowerCase();
-    saveProfileMetadata(lower, { notes, tags, isStarred });
-    setAppState(prev => {
-      const existing = prev.profiles[lower] || {
-        username: lower,
-        profileUrl: `https://instagram.com/${lower}`,
-        firstSeenAt: new Date().toISOString(),
-        lastSeenAt: new Date().toISOString(),
-      };
-      return {
-        ...prev,
-        profiles: {
-          ...prev.profiles,
-          [lower]: {
-            ...existing,
-            notes,
-            tags: tags || existing.tags,
-            isStarred: isStarred !== undefined ? isStarred : existing.isStarred,
-            lastSeenAt: new Date().toISOString(),
-          },
-        },
-      };
-    });
-  };
-
-  // Ingestion of a new snapshot (from ZIP archive or Live API)
-  const handleImportComplete = (newSnapshot: Snapshot, newEvents: RelationshipEvent[]) => {
-    const auditEntry = {
-      id: `audit_${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      action: 'ARCHIVE_INGESTION',
-      actor: 'Local Archive Reader',
-      details: `Successfully ingested "${newSnapshot.label}" with ${newSnapshot.followersCount} followers and ${newSnapshot.followingCount} following.`,
-      severity: 'INFO' as const,
+    const existing = appState.profiles[lower] || {
+      username: lower,
+      firstSeenAt: new Date().toISOString(),
     };
 
-    saveUserSnapshot(newSnapshot, newEvents, auditEntry);
+    const updatedProfile = {
+      ...existing,
+      notes,
+      tags: tags !== undefined ? tags : existing.tags,
+      isStarred: isStarred !== undefined ? isStarred : existing.isStarred,
+    };
 
-    const mergedProfiles = { ...appState.profiles };
-    if (newSnapshot.profiles) {
-      Object.entries(newSnapshot.profiles).forEach(([normUser, normProf]) => {
-        const existing = mergedProfiles[normUser];
-        mergedProfiles[normUser] = {
-          username: normUser,
-          displayName: normProf.displayName || existing?.displayName,
-          profileUrl: normProf.profileUrl,
-          firstSeenAt: existing?.firstSeenAt || newSnapshot.createdAt,
-          lastSeenAt: newSnapshot.createdAt,
-          source: normProf.source,
-          sourceTimestamp: normProf.sourceTimestamp,
-          notes: existing?.notes,
-          tags: existing?.tags,
-          isStarred: existing?.isStarred,
-        };
-      });
-    }
+    const updatedProfiles = {
+      ...appState.profiles,
+      [lower]: updatedProfile,
+    };
 
     setAppState(prev => ({
       ...prev,
-      snapshots: [...prev.snapshots, newSnapshot],
-      events: [...newEvents, ...prev.events],
-      profiles: mergedProfiles,
-      auditLogs: [auditEntry, ...prev.auditLogs],
+      profiles: updatedProfiles,
     }));
 
-    setCurrentSection('OVERVIEW');
+    saveProfileMetadata(lower, {
+      notes,
+      tags: updatedProfile.tags,
+      isStarred: updatedProfile.isStarred,
+    });
   };
 
-  // 1-Click Load Verified Regression Archive (163 Followers)
-  const handleLoadVerifiedArchive = async () => {
-    setIsLoadingVerified(true);
-    try {
-      const blob = await createOwnerExportZipBlob();
-      const parseResult = await parseUploadedExport(blob);
-      const prevSnap =
-        appState.snapshots.length > 0
-          ? appState.snapshots[appState.snapshots.length - 1]
-          : null;
-      const isBaseline = prevSnap === null;
-
-      const newSnapshot = buildSnapshotFromParseResult(
-        parseResult,
-        'Verified Baseline Archive',
-        'my_instagram',
-        'instagram_verified_sample_export.zip',
-        isBaseline
-      );
-
-      const comparison = prevSnap ? compareSnapshots(prevSnap, newSnapshot) : null;
-      const newEvents = comparison
-        ? generateEventsFromComparison(prevSnap, newSnapshot, comparison)
-        : [];
-
-      handleImportComplete(newSnapshot, newEvents);
-    } catch (err) {
-      console.error('Failed to load verified archive:', err);
-    } finally {
-      setIsLoadingVerified(false);
-    }
+  const handleToggleStar = (username: string) => {
+    const lower = username.toLowerCase();
+    const existing = appState.profiles[lower];
+    const isCurrentlyStarred = Boolean(existing?.isStarred);
+    handleSaveProfileNotes(
+      username,
+      existing?.notes || '',
+      existing?.tags,
+      !isCurrentlyStarred
+    );
   };
 
-  // 1-Click Simulate Second Check-In (+3 / −2)
-  const handleSimulateSecondCheckIn = async () => {
-    setIsLoadingVerified(true);
-    try {
-      const blob = await createSecondCheckInZipBlob();
-      const parseResult = await parseUploadedExport(blob);
-      const prevSnap =
-        appState.snapshots.length > 0
-          ? appState.snapshots[appState.snapshots.length - 1]
-          : null;
-      const isBaseline = prevSnap === null;
+  const handleImportComplete = (
+    newSnapshot: Snapshot,
+    newEvents: RelationshipEvent[]
+  ) => {
+    const updatedSnapshots = [...appState.snapshots, newSnapshot];
+    const updatedEvents = [...newEvents, ...appState.events];
 
-      const newSnapshot = buildSnapshotFromParseResult(
-        parseResult,
-        'Second Check-in (+3/−2)',
-        'my_instagram',
-        'instagram_checkin_2_diff.zip',
-        isBaseline
-      );
+    const updatedState: AppState = {
+      ...appState,
+      snapshots: updatedSnapshots,
+      events: updatedEvents,
+    };
 
-      const comparison = prevSnap ? compareSnapshots(prevSnap, newSnapshot) : null;
-      const newEvents = comparison
-        ? generateEventsFromComparison(prevSnap, newSnapshot, comparison)
-        : [];
-
-      handleImportComplete(newSnapshot, newEvents);
-    } catch (err) {
-      console.error('Failed to simulate check-in:', err);
-    } finally {
-      setIsLoadingVerified(false);
-    }
+    setAppState(updatedState);
+    saveUserSnapshot(newSnapshot, newEvents);
+    setIsGuestMode(true);
   };
 
-  // Purge all local data
-  const handlePurgeAllData = async () => {
-    await purgeAllUserData();
-    localStorage.clear();
+  const handlePurgeAllData = () => {
+    purgeAllUserData();
     setAppState({
       mode: 'USER',
       accountUsername: 'my_instagram',
@@ -317,12 +167,7 @@ export default function App() {
       events: [],
       profiles: {},
       auditLogs: [],
-      preferences: {
-        theme: 'dark',
-        autoCompareSnapshots: true,
-        maskUsernamesInAudit: false,
-        showConfidenceBadges: true,
-      },
+      preferences: appState.preferences,
     });
     setSelectedUsername(null);
     setCurrentSection('OVERVIEW');
@@ -331,47 +176,48 @@ export default function App() {
   const hasData = appState.snapshots.length > 0;
   const latestSnapshot = hasData ? appState.snapshots[appState.snapshots.length - 1] : null;
   const previousSnapshot =
-    appState.snapshots.length > 1 ? appState.snapshots[appState.snapshots.length - 2] : null;
+    appState.snapshots.length > 1
+      ? appState.snapshots[appState.snapshots.length - 2]
+      : null;
 
-  // Compute lost followers between snapshots
-  const lostFollowers = useMemo(() => {
-    if (!latestSnapshot || !previousSnapshot) return [];
-    const currentFollowers = new Set(latestSnapshot.followers.map(u => u.toLowerCase()));
-    return previousSnapshot.followers.filter(u => !currentFollowers.has(u.toLowerCase()));
-  }, [latestSnapshot, previousSnapshot]);
-
-  const mutualsCount = latestSnapshot?.mutualCount || 0;
-  const followersCount = latestSnapshot?.followersCount || 0;
-  const followingCount = latestSnapshot?.followingCount || 0;
+  // Real Metric Counters from latest snapshot
+  const followersCount = latestSnapshot?.followersCount ?? 0;
+  const followingCount = latestSnapshot?.followingCount ?? 0;
+  const mutualsCount = latestSnapshot?.mutualCount ?? 0;
   const notFollowingBackCount =
     latestSnapshot?.followingNotFollowingBack?.length ??
     Math.max(0, followingCount - mutualsCount);
   const youDontFollowCount =
     latestSnapshot?.followersNotFollowedBack?.length ??
     Math.max(0, followersCount - mutualsCount);
-  const closeFriendsCount = latestSnapshot?.closeFriends?.length || 0;
-  const pendingRequestsCount = latestSnapshot?.pendingRequests?.length || 0;
+  const closeFriendsCount = latestSnapshot?.closeFriends?.length ?? 0;
+  const pendingRequestsCount = latestSnapshot?.pendingRequests?.length ?? 0;
 
-  // Map sub-section to main nav section for top Header highlight
+  const lostFollowers = useMemo(() => {
+    if (!latestSnapshot || !previousSnapshot) return [];
+    const currentFollowersSet = new Set(latestSnapshot.followers || []);
+    return (previousSnapshot.followers || []).filter(h => !currentFollowersSet.has(h));
+  }, [latestSnapshot, previousSnapshot]);
+
   const mappedNavSection: MainNavSection = useMemo(() => {
     if (currentSection === 'OVERVIEW') return 'OVERVIEW';
-    if (currentSection === 'HISTORY') return 'HISTORY';
     if (currentSection === 'TIMELINE') return 'TIME_MACHINE';
+    if (currentSection === 'HISTORY') return 'HISTORY';
     return 'RELATIONSHIPS';
   }, [currentSection]);
 
-  const handleSelectNavSection = (section: MainNavSection) => {
+  const handleSelectNavSection = (nav: MainNavSection) => {
+    if (nav === 'OVERVIEW') setCurrentSection('OVERVIEW');
+    else if (nav === 'TIME_MACHINE') setCurrentSection('TIMELINE');
+    else if (nav === 'HISTORY') setCurrentSection('HISTORY');
+    else setCurrentSection('DONT_FOLLOW_BACK');
     setSelectedUsername(null);
-    if (section === 'OVERVIEW') setCurrentSection('OVERVIEW');
-    else if (section === 'RELATIONSHIPS') setCurrentSection('MUTUALS');
-    else if (section === 'HISTORY') setCurrentSection('HISTORY');
-    else if (section === 'TIME_MACHINE') setCurrentSection('TIMELINE');
   };
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-[#070A12] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-[#38BDF8] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#0C0D0F] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -379,18 +225,13 @@ export default function App() {
   // If user is not logged in with Google, has not chosen guest mode, and has no data loaded:
   if (!currentUser && !isGuestMode && !hasData) {
     return (
-      <div className="min-h-screen bg-[#070A12] text-white font-sans flex flex-col justify-center selection:bg-[#F43F5E] selection:text-white">
+      <div className="min-h-screen bg-[#0C0D0F] text-white font-sans flex flex-col justify-center selection:bg-white selection:text-black">
         <LoginScreen
           onContinueAsGuestArchive={() => setIsGuestMode(true)}
           onOpenImport={() => {
             setIsGuestMode(true);
             setIsImportOpen(true);
           }}
-          onLoadVerifiedArchive={() => {
-            setIsGuestMode(true);
-            handleLoadVerifiedArchive();
-          }}
-          isLoadingVerified={isLoadingVerified}
           onUserAuthenticated={u => setCurrentUser(u)}
         />
         <ImportModal
@@ -404,8 +245,8 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070A12] text-white font-sans flex flex-col selection:bg-[#F43F5E] selection:text-white">
-      {/* Modern Top Header */}
+    <div className="min-h-screen bg-[#0C0D0F] text-white font-sans flex flex-col selection:bg-white selection:text-black min-w-0 overflow-x-hidden">
+      {/* Luxury Top Header */}
       <Header
         hasData={hasData}
         activeSnapshotLabel={latestSnapshot?.label}
@@ -424,17 +265,17 @@ export default function App() {
       {/* Global Notification Banner */}
       {oauthBanner && (
         <div
-          className={`w-full py-3 px-4 text-xs font-mono font-bold flex items-center justify-between border-b-2 ${
+          className={`w-full py-2.5 px-4 text-xs font-mono font-medium flex items-center justify-between border-b ${
             oauthBanner.type === 'success'
-              ? 'bg-[#064E3B] border-[#10B981] text-white'
-              : 'bg-[#4C0519] border-[#F43F5E] text-white'
+              ? 'bg-[#2A8F53]/20 border-[#2A8F53] text-white'
+              : 'bg-[#D94444]/20 border-[#D94444] text-white'
           }`}
         >
           <div className="max-w-7xl mx-auto flex-1 flex items-center justify-between">
             <span>{oauthBanner.message}</span>
             <button
               onClick={() => setOauthBanner(null)}
-              className="ml-4 underline cursor-pointer hover:text-[#38BDF8]"
+              className="ml-4 underline cursor-pointer text-white/80 hover:text-white"
             >
               Dismiss
             </button>
@@ -442,24 +283,135 @@ export default function App() {
         </div>
       )}
 
+      {/* MOBILE CATEGORY SCROLLER BAR (Visible on mobile screens < 768px when data exists) */}
+      {hasData && (
+        <div className="md:hidden border-b border-white/[0.08] bg-[#0C0D0F] px-3 py-2 overflow-x-auto whitespace-nowrap scrollbar-none flex items-center space-x-1.5 min-w-0">
+          <button
+            onClick={() => {
+              setCurrentSection('OVERVIEW');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
+              currentSection === 'OVERVIEW'
+                ? 'bg-white text-[#0C0D0F] font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            Overview
+          </button>
+          <button
+            onClick={() => {
+              setCurrentSection('DONT_FOLLOW_BACK');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 flex items-center space-x-1.5 ${
+              currentSection === 'DONT_FOLLOW_BACK'
+                ? 'bg-[#D94444] text-white font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            <span>Not Back</span>
+            <span className="font-mono text-[11px] opacity-80">{notFollowingBackCount}</span>
+          </button>
+          <button
+            onClick={() => {
+              setCurrentSection('MUTUALS');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 flex items-center space-x-1.5 ${
+              currentSection === 'MUTUALS'
+                ? 'bg-[#2A8F53] text-white font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            <span>Mutuals</span>
+            <span className="font-mono text-[11px] opacity-80">{mutualsCount}</span>
+          </button>
+          <button
+            onClick={() => {
+              setCurrentSection('FOLLOWERS');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
+              currentSection === 'FOLLOWERS'
+                ? 'bg-white text-[#0C0D0F] font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            Followers ({followersCount})
+          </button>
+          <button
+            onClick={() => {
+              setCurrentSection('FOLLOWING');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
+              currentSection === 'FOLLOWING'
+                ? 'bg-white text-[#0C0D0F] font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            Following ({followingCount})
+          </button>
+          <button
+            onClick={() => {
+              setCurrentSection('YOU_DONT_FOLLOW');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
+              currentSection === 'YOU_DONT_FOLLOW'
+                ? 'bg-white text-[#0C0D0F] font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            Fans ({youDontFollowCount})
+          </button>
+          <button
+            onClick={() => {
+              setCurrentSection('TIMELINE');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
+              currentSection === 'TIMELINE'
+                ? 'bg-white text-[#0C0D0F] font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            Timeline
+          </button>
+          <button
+            onClick={() => {
+              setCurrentSection('HISTORY');
+              setSelectedUsername(null);
+            }}
+            className={`px-3 py-1.5 rounded text-xs font-medium transition cursor-pointer shrink-0 ${
+              currentSection === 'HISTORY'
+                ? 'bg-white text-[#0C0D0F] font-semibold'
+                : 'text-[#8E909D] hover:text-white bg-[#131418]'
+            }`}
+          >
+            History
+          </button>
+        </div>
+      )}
+
       <ErrorBoundary fallbackTitle="View Rendering Recovered">
-        <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-w-0">
           {!hasData ? (
-            /* SCENE 01: HERO VIEW WITH LIVE INTERACTIVE PREVIEW */
+            /* HERO SCENE: ARCHIVE INGESTION VAULT */
             <HeroView
               userName={currentUser?.name}
               onOpenImport={() => setIsImportOpen(true)}
               onOpenConnect={() => setIsConnectOpen(true)}
-              onLoadVerifiedArchive={handleLoadVerifiedArchive}
-              isLoadingVerified={isLoadingVerified}
             />
           ) : (
-            /* SCENE 02: MAIN APP SPLIT 3-COLUMN LAYOUT */
-            <div className="py-6 sm:py-8 grid grid-cols-1 md:grid-cols-12 gap-6 sm:gap-8 items-start pb-28 md:pb-8">
-              {/* LEFT COLUMN: RELATIONSHIP CATEGORIES SIDEBAR (Visible on Tablet & Desktop) */}
-              <nav className="hidden md:flex md:col-span-4 lg:col-span-3 font-sans text-xs border border-white/[0.08] bg-[#141414] p-3 rounded-2xl shadow-xl flex-col gap-1 sticky top-20 min-w-0">
-                <span className="text-[11px] font-mono tracking-wider text-neutral-400 uppercase block px-3 py-1">
-                  Categories
+            /* MAIN APP LAYOUT: ADAPTIVE GRID ACROSS DEVICES */
+            <div className="py-4 sm:py-8 grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-8 items-start pb-24 md:pb-8 min-w-0">
+              
+              {/* LEFT COLUMN: DESKTOP & TABLET CATEGORY SIDEBAR */}
+              <nav className="hidden md:flex md:col-span-4 lg:col-span-3 font-sans text-xs border border-white/[0.08] bg-[#131418] p-3 rounded-xl shadow-xl flex-col gap-1 sticky top-20 min-w-0">
+                <span className="text-[10px] font-mono tracking-widest text-[#8E909D] uppercase block px-3 py-1">
+                  Cohorts
                 </span>
 
                 <button
@@ -467,10 +419,10 @@ export default function App() {
                     setCurrentSection('OVERVIEW');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'OVERVIEW'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span>Overview</span>
@@ -481,14 +433,14 @@ export default function App() {
                     setCurrentSection('DONT_FOLLOW_BACK');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'DONT_FOLLOW_BACK'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-[#D94444] text-white font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">Don&apos;t follow back</span>
-                  <span className="font-mono text-xs tabular-nums text-red-400 font-semibold">
+                  <span className="font-mono text-xs tabular-nums text-white">
                     {notFollowingBackCount}
                   </span>
                 </button>
@@ -498,14 +450,14 @@ export default function App() {
                     setCurrentSection('MUTUALS');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'MUTUALS'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-[#2A8F53] text-white font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <span className="mr-2">Mutual friends</span>
-                  <span className="font-mono text-xs tabular-nums text-emerald-400 font-semibold">
+                  <span className="mr-2">Mutual bonds</span>
+                  <span className="font-mono text-xs tabular-nums text-white">
                     {mutualsCount}
                   </span>
                 </button>
@@ -515,14 +467,14 @@ export default function App() {
                     setCurrentSection('FOLLOWERS');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'FOLLOWERS'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">All followers</span>
-                  <span className="font-mono text-xs tabular-nums text-white">
+                  <span className="font-mono text-xs tabular-nums text-[#8E909D]">
                     {followersCount}
                   </span>
                 </button>
@@ -532,14 +484,14 @@ export default function App() {
                     setCurrentSection('FOLLOWING');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'FOLLOWING'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">Following</span>
-                  <span className="font-mono text-xs tabular-nums text-white">
+                  <span className="font-mono text-xs tabular-nums text-[#8E909D]">
                     {followingCount}
                   </span>
                 </button>
@@ -549,14 +501,14 @@ export default function App() {
                     setCurrentSection('YOU_DONT_FOLLOW');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'YOU_DONT_FOLLOW'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
-                  <span className="mr-2">Fans (You don&apos;t follow)</span>
-                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                  <span className="mr-2">Fans</span>
+                  <span className="font-mono text-xs tabular-nums text-[#8E909D]">
                     {youDontFollowCount}
                   </span>
                 </button>
@@ -566,32 +518,15 @@ export default function App() {
                     setCurrentSection('CLOSE_FRIENDS');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'CLOSE_FRIENDS'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">Close friends</span>
-                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                  <span className="font-mono text-xs tabular-nums text-[#8E909D]">
                     {closeFriendsCount}
-                  </span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setCurrentSection('LOST');
-                    setSelectedUsername(null);
-                  }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
-                    currentSection === 'LOST'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
-                  }`}
-                >
-                  <span className="mr-2">Lost followers</span>
-                  <span className="font-mono text-xs tabular-nums text-red-400">
-                    {lostFollowers.length}
                   </span>
                 </button>
 
@@ -600,21 +535,21 @@ export default function App() {
                     setCurrentSection('REQUESTS');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'REQUESTS'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">Pending requests</span>
-                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                  <span className="font-mono text-xs tabular-nums text-[#8E909D]">
                     {pendingRequestsCount}
                   </span>
                 </button>
 
                 <div className="pt-3 border-t border-white/[0.08] w-full mt-2">
-                  <span className="text-[11px] font-mono tracking-wider text-neutral-400 uppercase block px-3 pb-1">
-                    Timeline & History
+                  <span className="text-[10px] font-mono tracking-widest text-[#8E909D] uppercase block px-3 pb-1">
+                    Temporal
                   </span>
                 </div>
 
@@ -623,14 +558,14 @@ export default function App() {
                     setCurrentSection('TIMELINE');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'TIMELINE'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">Timeline</span>
-                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                  <span className="font-mono text-xs tabular-nums text-[#8E909D]">
                     {appState.snapshots.length}
                   </span>
                 </button>
@@ -640,24 +575,24 @@ export default function App() {
                     setCurrentSection('HISTORY');
                     setSelectedUsername(null);
                   }}
-                  className={`w-full py-2.5 px-3 text-left rounded-lg flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
+                  className={`w-full py-2.5 px-3 text-left rounded flex items-center justify-between whitespace-nowrap transition cursor-pointer ${
                     currentSection === 'HISTORY'
-                      ? 'bg-white/[0.08] text-white font-semibold border-l-2 border-white'
-                      : 'text-neutral-400 hover:text-white hover:bg-white/[0.04]'
+                      ? 'bg-white text-[#0C0D0F] font-semibold'
+                      : 'text-[#8E909D] hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span className="mr-2">History</span>
-                  <span className="font-mono text-xs tabular-nums text-neutral-400">
+                  <span className="font-mono text-xs tabular-nums text-[#8E909D]">
                     {appState.events.length}
                   </span>
                 </button>
               </nav>
 
-              {/* CENTER COLUMN: MAIN DATA WORKSPACE */}
+              {/* CENTER COLUMN: MAIN WORKSPACE */}
               <div
                 className={`col-span-1 md:col-span-8 ${
                   selectedUsername ? 'lg:col-span-5' : 'lg:col-span-9'
-                }`}
+                } min-w-0`}
               >
                 {currentSection === 'OVERVIEW' && latestSnapshot && (
                   <OverviewView
@@ -672,104 +607,112 @@ export default function App() {
 
                 {currentSection === 'MUTUALS' && latestSnapshot && (
                   <AccountListView
-                    title="Mutual bonds"
+                    title="Mutual Bonds"
                     count={mutualsCount}
                     handles={latestSnapshot.mutuals || []}
                     relationshipLabel="Mutual"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'FOLLOWERS' && latestSnapshot && (
                   <AccountListView
-                    title="Followers"
+                    title="All Followers"
                     count={followersCount}
                     handles={latestSnapshot.followers || []}
                     relationshipLabel="Follows you"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'FOLLOWING' && latestSnapshot && (
                   <AccountListView
-                    title="Following"
+                    title="Following Roster"
                     count={followingCount}
                     handles={latestSnapshot.following || []}
                     relationshipLabel="You follow"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'DONT_FOLLOW_BACK' && latestSnapshot && (
                   <AccountListView
-                    title="Don't follow back"
+                    title="Don't Follow Back"
                     count={notFollowingBackCount}
                     handles={latestSnapshot.followingNotFollowingBack || []}
                     relationshipLabel="Doesn't follow"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'YOU_DONT_FOLLOW' && latestSnapshot && (
                   <AccountListView
-                    title="You don't follow back"
+                    title="Fans (You Don't Follow Back)"
                     count={youDontFollowCount}
                     handles={latestSnapshot.followersNotFollowedBack || []}
                     relationshipLabel="Fan"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'LOST' && (
                   <AccountListView
-                    title="Lost followers"
+                    title="Lost Followers"
                     count={lostFollowers.length}
                     handles={lostFollowers}
                     relationshipLabel="Severed"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'REQUESTS' && latestSnapshot && (
                   <AccountListView
-                    title="Pending requests"
+                    title="Pending Requests"
                     count={pendingRequestsCount}
                     handles={latestSnapshot.pendingRequests || []}
                     relationshipLabel="Requested"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'CLOSE_FRIENDS' && latestSnapshot && (
                   <AccountListView
-                    title="Close friends"
+                    title="Close Friends List"
                     count={closeFriendsCount}
                     handles={latestSnapshot.closeFriends || []}
                     relationshipLabel="Close friend"
                     selectedUsername={selectedUsername}
                     onSelectProfile={setSelectedUsername}
                     profiles={appState.profiles}
+                    onToggleStar={handleToggleStar}
                   />
                 )}
 
                 {currentSection === 'TIMELINE' && (
                   <TimeMachineView
                     snapshots={appState.snapshots}
-                    onSimulateSecondCheckIn={handleSimulateSecondCheckIn}
+                    onOpenImport={() => setIsImportOpen(true)}
                     onSelectProfile={setSelectedUsername}
                   />
                 )}
@@ -782,7 +725,7 @@ export default function App() {
                 )}
               </div>
 
-              {/* RIGHT COLUMN: CONTEXTUAL DETAIL PANE (Desktop >= 1024px) */}
+              {/* RIGHT COLUMN: DESKTOP CONTEXTUAL INSPECTOR (Desktop >= 1024px) */}
               <div className="hidden lg:block lg:col-span-4 sticky top-20">
                 {selectedUsername ? (
                   <ProfileDetailPane
@@ -792,14 +735,15 @@ export default function App() {
                     events={appState.events}
                     profile={appState.profiles[selectedUsername.toLowerCase()]}
                     onSaveNotes={handleSaveProfileNotes}
+                    onToggleStar={handleToggleStar}
                   />
                 ) : (
-                  <div className="p-8 bg-[#12141D] border border-white/[0.08] rounded-2xl text-center space-y-2">
-                    <p className="text-xs uppercase tracking-wider text-slate-400 font-semibold">
-                      Account Inspector
+                  <div className="p-8 bg-[#131418] border border-white/[0.08] rounded-xl text-center space-y-2">
+                    <p className="text-[10px] font-mono tracking-widest text-[#8E909D] uppercase">
+                      Account Dossier
                     </p>
-                    <p className="text-xs text-slate-500 font-sans leading-relaxed">
-                      Select any account in the list to view their follower history, relationship details, and add private notes.
+                    <p className="text-xs text-[#565866] leading-relaxed">
+                      Select any account in the audit roster to inspect their history and save private notes.
                     </p>
                   </div>
                 )}
@@ -809,17 +753,17 @@ export default function App() {
         </main>
       </ErrorBoundary>
 
-      {/* Mobile Slide-Up Account Details Sheet (Screens < 1024px) */}
+      {/* MOBILE SLIDE-UP ACCOUNT DOSSIER (Screens < 1024px) */}
       {selectedUsername && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
+          className="lg:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fade-in"
           onClick={() => setSelectedUsername(null)}
         >
           <div
-            className="w-full sm:max-w-md bg-[#141414] border-t sm:border border-white/[0.12] rounded-t-3xl sm:rounded-2xl max-h-[88vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up min-w-0"
+            className="w-full sm:max-w-md bg-[#131418] border-t sm:border border-white/[0.12] rounded-t-2xl sm:rounded-xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up min-w-0"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto my-3 sm:hidden" />
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto my-3 sm:hidden" />
             <ProfileDetailPane
               username={selectedUsername}
               onClose={() => setSelectedUsername(null)}
@@ -827,25 +771,28 @@ export default function App() {
               events={appState.events}
               profile={appState.profiles[selectedUsername.toLowerCase()]}
               onSaveNotes={handleSaveProfileNotes}
+              onToggleStar={handleToggleStar}
             />
           </div>
         </div>
       )}
 
-      {/* Mobile Native Bottom Navigation Bar (Screens < 768px when data exists) */}
+      {/* MOBILE NATIVE BOTTOM NAVIGATION BAR (Screens < 768px when data exists) */}
       {hasData && (
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0A0A0A]/95 backdrop-blur-xl border-t border-white/[0.08] px-2 py-2 flex items-center justify-around shadow-2xl safe-area-bottom">
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#0C0D0F]/95 backdrop-blur-xl border-t border-white/[0.08] px-2 py-2 flex items-center justify-around shadow-2xl safe-area-bottom">
           <button
             onClick={() => {
               setCurrentSection('OVERVIEW');
               setSelectedUsername(null);
             }}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 ${
-              currentSection === 'OVERVIEW' ? 'text-white' : 'text-neutral-400 hover:text-white'
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded transition cursor-pointer flex-1 ${
+              currentSection === 'OVERVIEW' ? 'text-white' : 'text-[#8E909D] hover:text-white'
             }`}
           >
-            <span className="text-base leading-none">📊</span>
-            <span className="text-[10px] font-semibold mt-1">Overview</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            <span className="text-[10px] font-mono tracking-wider mt-1">Overview</span>
           </button>
 
           <button
@@ -853,14 +800,16 @@ export default function App() {
               setCurrentSection('DONT_FOLLOW_BACK');
               setSelectedUsername(null);
             }}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 relative ${
-              currentSection === 'DONT_FOLLOW_BACK' ? 'text-red-400' : 'text-neutral-400 hover:text-white'
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded transition cursor-pointer flex-1 relative ${
+              currentSection === 'DONT_FOLLOW_BACK' ? 'text-[#D94444]' : 'text-[#8E909D] hover:text-white'
             }`}
           >
-            <span className="text-base leading-none">💔</span>
-            <span className="text-[10px] font-semibold mt-1">Unfollowers</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+            </svg>
+            <span className="text-[10px] font-mono tracking-wider mt-1">Not Back</span>
             {notFollowingBackCount > 0 && (
-              <span className="absolute top-0 right-2 bg-red-600 text-white font-mono text-[9px] font-bold px-1.5 rounded-full">
+              <span className="absolute top-0 right-3 bg-[#D94444] text-white font-mono text-[9px] font-bold px-1.5 rounded-full">
                 {notFollowingBackCount}
               </span>
             )}
@@ -871,14 +820,16 @@ export default function App() {
               setCurrentSection('MUTUALS');
               setSelectedUsername(null);
             }}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 relative ${
-              currentSection === 'MUTUALS' ? 'text-emerald-400' : 'text-neutral-400 hover:text-white'
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded transition cursor-pointer flex-1 relative ${
+              currentSection === 'MUTUALS' ? 'text-[#2A8F53]' : 'text-[#8E909D] hover:text-white'
             }`}
           >
-            <span className="text-base leading-none">👥</span>
-            <span className="text-[10px] font-semibold mt-1">Mutuals</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+            </svg>
+            <span className="text-[10px] font-mono tracking-wider mt-1">Mutuals</span>
             {mutualsCount > 0 && (
-              <span className="absolute top-0 right-2 bg-emerald-600 text-white font-mono text-[9px] font-bold px-1.5 rounded-full">
+              <span className="absolute top-0 right-3 bg-[#2A8F53] text-white font-mono text-[9px] font-bold px-1.5 rounded-full">
                 {mutualsCount}
               </span>
             )}
@@ -889,42 +840,46 @@ export default function App() {
               setCurrentSection('TIMELINE');
               setSelectedUsername(null);
             }}
-            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 ${
-              currentSection === 'TIMELINE' ? 'text-white' : 'text-neutral-400 hover:text-white'
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded transition cursor-pointer flex-1 ${
+              currentSection === 'TIMELINE' ? 'text-white' : 'text-[#8E909D] hover:text-white'
             }`}
           >
-            <span className="text-base leading-none">⏳</span>
-            <span className="text-[10px] font-semibold mt-1">Timeline</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="text-[10px] font-mono tracking-wider mt-1">Timeline</span>
           </button>
 
           <button
             onClick={() => setIsMobileMoreOpen(true)}
-            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl transition cursor-pointer flex-1 text-neutral-400 hover:text-white"
+            className="flex flex-col items-center justify-center py-1 px-2 rounded transition cursor-pointer flex-1 text-[#8E909D] hover:text-white"
           >
-            <span className="text-base leading-none">☰</span>
-            <span className="text-[10px] font-semibold mt-1">More</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+            <span className="text-[10px] font-mono tracking-wider mt-1">Cohorts</span>
           </button>
         </nav>
       )}
 
-      {/* Mobile More Sheet */}
+      {/* MOBILE MORE COHORTS SHEET */}
       {isMobileMoreOpen && (
         <div
-          className="md:hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-end justify-center animate-fade-in"
+          className="md:hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-end justify-center animate-fade-in"
           onClick={() => setIsMobileMoreOpen(false)}
         >
           <div
-            className="w-full bg-[#141414] border-t border-white/[0.12] rounded-t-3xl p-5 space-y-4 shadow-2xl animate-slide-up min-w-0"
+            className="w-full bg-[#131418] border-t border-white/[0.1] rounded-t-2xl p-5 space-y-4 shadow-2xl animate-slide-up min-w-0"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-2" />
+            <div className="w-10 h-1 bg-white/20 rounded-full mx-auto mb-2" />
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
-              <span className="font-semibold text-sm text-white">All Categories</span>
+              <span className="font-mono text-xs uppercase tracking-widest text-[#8E909D]">All Cohorts</span>
               <button
                 onClick={() => setIsMobileMoreOpen(false)}
-                className="text-xs text-neutral-400 hover:text-white p-1"
+                className="text-xs text-[#8E909D] hover:text-white p-1"
               >
-                ✕ Close
+                &times; Close
               </button>
             </div>
 
@@ -935,10 +890,10 @@ export default function App() {
                   setSelectedUsername(null);
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+                className="p-3 bg-[#0C0D0F] border border-white/[0.08] rounded text-left flex justify-between items-center"
               >
-                <span>Followers</span>
-                <span className="font-mono text-neutral-400">{followersCount}</span>
+                <span className="text-white">Followers</span>
+                <span className="font-mono text-[#8E909D]">{followersCount}</span>
               </button>
 
               <button
@@ -947,10 +902,10 @@ export default function App() {
                   setSelectedUsername(null);
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+                className="p-3 bg-[#0C0D0F] border border-white/[0.08] rounded text-left flex justify-between items-center"
               >
-                <span>Following</span>
-                <span className="font-mono text-neutral-400">{followingCount}</span>
+                <span className="text-white">Following</span>
+                <span className="font-mono text-[#8E909D]">{followingCount}</span>
               </button>
 
               <button
@@ -959,10 +914,10 @@ export default function App() {
                   setSelectedUsername(null);
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+                className="p-3 bg-[#0C0D0F] border border-white/[0.08] rounded text-left flex justify-between items-center"
               >
-                <span>Fans</span>
-                <span className="font-mono text-neutral-400">{youDontFollowCount}</span>
+                <span className="text-white">Fans</span>
+                <span className="font-mono text-[#8E909D]">{youDontFollowCount}</span>
               </button>
 
               <button
@@ -971,22 +926,10 @@ export default function App() {
                   setSelectedUsername(null);
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+                className="p-3 bg-[#0C0D0F] border border-white/[0.08] rounded text-left flex justify-between items-center"
               >
-                <span>Close Friends</span>
-                <span className="font-mono text-neutral-400">{closeFriendsCount}</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setCurrentSection('LOST');
-                  setSelectedUsername(null);
-                  setIsMobileMoreOpen(false);
-                }}
-                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
-              >
-                <span>Lost</span>
-                <span className="font-mono text-red-400">{lostFollowers.length}</span>
+                <span className="text-white">Close Friends</span>
+                <span className="font-mono text-[#8E909D]">{closeFriendsCount}</span>
               </button>
 
               <button
@@ -995,10 +938,10 @@ export default function App() {
                   setSelectedUsername(null);
                   setIsMobileMoreOpen(false);
                 }}
-                className="p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+                className="p-3 bg-[#0C0D0F] border border-white/[0.08] rounded text-left flex justify-between items-center"
               >
-                <span>Requests</span>
-                <span className="font-mono text-neutral-400">{pendingRequestsCount}</span>
+                <span className="text-white">Pending</span>
+                <span className="font-mono text-[#8E909D]">{pendingRequestsCount}</span>
               </button>
 
               <button
@@ -1007,31 +950,10 @@ export default function App() {
                   setSelectedUsername(null);
                   setIsMobileMoreOpen(false);
                 }}
-                className="col-span-2 p-3 bg-neutral-900 border border-neutral-800 rounded-xl text-left flex justify-between items-center"
+                className="p-3 bg-[#0C0D0F] border border-white/[0.08] rounded text-left flex justify-between items-center"
               >
-                <span>History Log</span>
-                <span className="font-mono text-neutral-400">{appState.events.length} records</span>
-              </button>
-            </div>
-
-            <div className="pt-2 flex items-center justify-between border-t border-white/[0.08]">
-              <button
-                onClick={() => {
-                  setIsMobileMoreOpen(false);
-                  setIsSettingsOpen(true);
-                }}
-                className="text-xs text-neutral-300 hover:text-white"
-              >
-                ⚙ Settings & Storage
-              </button>
-              <button
-                onClick={() => {
-                  setIsMobileMoreOpen(false);
-                  setIsAboutOpen(true);
-                }}
-                className="text-xs text-neutral-400 hover:text-white"
-              >
-                About Follow Signal
+                <span className="text-white">History</span>
+                <span className="font-mono text-[#8E909D]">{appState.events.length}</span>
               </button>
             </div>
           </div>
@@ -1052,15 +974,6 @@ export default function App() {
         onOpenImport={() => {
           setIsConnectOpen(false);
           setIsImportOpen(true);
-        }}
-        onSnapshotCreated={snap => {
-          handleImportComplete(snap, []);
-        }}
-        onAccountConnected={user => {
-          setConnectedAccountUsername(user);
-        }}
-        onAccountDisconnected={() => {
-          setConnectedAccountUsername(null);
         }}
       />
 

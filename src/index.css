@@ -1,40 +1,40 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
 :root {
-  /* Bespoke Architectural Stone & Antique Brass Palette (Zero AI Slop / Zero Neon / Zero Banned Codes) */
-  --canvas-bg: #131417;
-  --surface-panel: #1A1B20;
-  --surface-raised: #21232A;
-  --surface-hover: #292B33;
+  /* Minimalist Luxury Monochrome Palette (Zero AI Slop / Zero Neon / Zero Banned Yellow, Blue, Purple) */
+  --canvas-bg: #0C0D0F;
+  --surface-panel: #131418;
+  --surface-raised: #1A1C22;
+  --surface-hover: #22252C;
 
-  --border-subtle: rgba(240, 238, 233, 0.08);
-  --border-medium: rgba(240, 238, 233, 0.15);
-  --border-highlight: rgba(240, 238, 233, 0.28);
+  --border-subtle: rgba(255, 255, 255, 0.07);
+  --border-medium: rgba(255, 255, 255, 0.14);
+  --border-highlight: rgba(255, 255, 255, 0.28);
 
-  --text-primary: #F5F5F3;
-  --text-secondary: #D4D5DC;
-  --text-muted: #9596A2;
-  --text-faint: #636573;
+  --text-primary: #FFFFFF;
+  --text-secondary: #D1D3DC;
+  --text-muted: #8E909D;
+  --text-faint: #565866;
 
-  /* Hand-Crafted Status & Accent (No neon, no purple, no cyan, no mint) */
-  --accent-brass: #C5A869;
-  --accent-brass-hover: #D4B475;
-  --status-unreciprocated: #C93B3B;
-  --status-mutual: #2E7D47;
+  /* Luxury Accents */
+  --accent-platinum: #F3F4F6;
+  --status-unreciprocated: #D94444;
+  --status-mutual: #2A8F53;
 }
 
 body {
-  background-color: #131417;
-  color: #F5F5F3;
+  background-color: #0C0D0F;
+  color: #FFFFFF;
   font-family: var(--font-sans);
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
 }
 
 .tabular-nums {
@@ -42,27 +42,26 @@ body {
 }
 
 ::selection {
-  background-color: #C5A869;
-  color: #131417;
+  background-color: #FFFFFF;
+  color: #0C0D0F;
 }
 
-/* Custom Scrollbars */
+/* Luxury Minimal Scrollbars */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #131417;
+  background: #0C0D0F;
 }
 ::-webkit-scrollbar-thumb {
-  background: #2A2C35;
-  border-radius: 2px;
+  background: #23252E;
+  border-radius: 1px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B3E4B;
+  background: #363945;
 }
 
-/* Safe area bottom padding for mobile devices */
 .safe-area-bottom {
   padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
 }

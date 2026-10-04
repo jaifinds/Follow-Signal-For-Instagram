@@ -21,47 +21,47 @@ export const AboutModal: React.FC<AboutModalProps> = ({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg bg-[#141414] border border-white/[0.08] rounded-2xl shadow-2xl p-6 sm:p-8 space-y-5 text-white min-w-0"
+        className="w-full max-w-lg bg-[#131418] border border-white/[0.08] rounded-xl shadow-2xl p-6 sm:p-8 space-y-6 text-white min-w-0"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-white/[0.08] pb-3.5">
-          <div className="text-xs font-mono tracking-wider text-neutral-400 uppercase">
-            About Follow Signal
+        <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
+          <div className="text-[10px] font-mono tracking-widest text-[#8E909D] uppercase">
+            Protocol Overview
           </div>
           <button
             onClick={onClose}
-            className="text-xs font-mono text-neutral-400 hover:text-white transition cursor-pointer p-1"
+            className="text-xs font-mono text-[#8E909D] hover:text-white transition cursor-pointer p-1"
           >
             &times; Close
           </button>
         </div>
 
-        <div className="space-y-3.5 text-xs text-neutral-300 leading-relaxed">
-          <h3 className="text-xl font-bold text-white tracking-tight">
-            Client-Side Privacy Architecture
+        <div className="space-y-4 text-xs text-[#8E909D] leading-relaxed">
+          <h3 className="text-xl font-light text-white tracking-tight">
+            Client-Side Confidential Architecture
           </h3>
 
           <p>
-            Follow Signal is built on a zero-knowledge local architecture. Your relationship data, follower rosters, and raw archives remain strictly inside your browser sandbox.
+            Follow Signal is engineered on a zero-knowledge local architecture. Your relationship data, follower rosters, and raw archives remain strictly inside your browser sandbox.
           </p>
 
-          <div className="space-y-2 border-t border-b border-white/[0.08] py-3 text-xs font-mono text-white">
+          <div className="space-y-2 border-t border-b border-white/[0.08] py-3 text-xs font-mono text-[#D1D3DC]">
             <p className="flex items-center space-x-2">
-              <span className="text-emerald-400">&bull;</span>
-              <span>In-Browser Evaluation: Archives parsed using Web Workers.</span>
+              <span className="text-white">&bull;</span>
+              <span>In-Browser Evaluation: Archives parsed locally via JSZip.</span>
             </p>
             <p className="flex items-center space-x-2">
-              <span className="text-emerald-400">&bull;</span>
-              <span>Zero Passwords: We never request or store your Instagram credentials.</span>
+              <span className="text-white">&bull;</span>
+              <span>Zero Credentials: We never request or store your Instagram credentials.</span>
             </p>
             <p className="flex items-center space-x-2">
-              <span className="text-emerald-400">&bull;</span>
-              <span>IndexedDB Persistence: Snapshots saved locally on your device.</span>
+              <span className="text-white">&bull;</span>
+              <span>IndexedDB Persistence: Snapshots saved locally on your machine.</span>
             </p>
           </div>
 
-          <p className="text-xs text-neutral-500">
-            All relationship snapshots are stored locally in IndexedDB. You can delete all local data at any time.
+          <p className="text-[11px] text-[#565866]">
+            All relationship snapshots are stored locally in IndexedDB. You can wipe all local records at any time.
           </p>
         </div>
 
@@ -74,13 +74,13 @@ export const AboutModal: React.FC<AboutModalProps> = ({
                   setConfirmingPurge(false);
                   onClose();
                 }}
-                className="py-1.5 px-3 bg-red-600 text-white rounded text-xs font-mono cursor-pointer"
+                className="py-1.5 px-3 bg-[#D94444] text-white rounded text-xs font-mono cursor-pointer"
               >
-                Confirm Delete All Data
+                Confirm Delete All Records
               </button>
               <button
                 onClick={() => setConfirmingPurge(false)}
-                className="py-1.5 px-3 bg-neutral-800 text-white text-xs font-mono rounded cursor-pointer"
+                className="py-1.5 px-3 bg-[#1A1C22] text-white text-xs font-mono rounded cursor-pointer"
               >
                 Cancel
               </button>
@@ -88,13 +88,13 @@ export const AboutModal: React.FC<AboutModalProps> = ({
           ) : (
             <button
               onClick={() => setConfirmingPurge(true)}
-              className="text-xs font-mono text-red-400 hover:underline transition cursor-pointer"
+              className="text-xs font-mono text-[#D94444] hover:underline transition cursor-pointer"
             >
-              Wipe Local Storage
+              Wipe Local Vault Storage
             </button>
           )}
 
-          <span className="text-xs font-mono text-neutral-500">Follow Signal</span>
+          <span className="text-[10px] font-mono text-[#565866]">Follow Signal</span>
         </div>
       </div>
     </div>

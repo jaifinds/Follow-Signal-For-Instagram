@@ -33,46 +33,7 @@ export function getDefaultPreferences(): UserPreference {
 
 export function loadAppState(): AppState {
   try {
-    const savedMode = (localStorage.getItem(STORAGE_KEYS.CURRENT_MODE) as 'DEMO' | 'USER') || 'USER';
     const savedUsername = localStorage.getItem(STORAGE_KEYS.ACCOUNT_USERNAME) || 'my_instagram';
-
-    if (savedMode === 'DEMO') {
-      const demoEvents = buildDemoEvents();
-      return {
-        mode: 'DEMO',
-        accountUsername: DEMO_ACCOUNT_HANDLE,
-        snapshots: DEMO_SNAPSHOTS,
-        events: demoEvents,
-        profiles: SYNTHETIC_PROFILES,
-        auditLogs: [
-          {
-            id: 'audit_01',
-            timestamp: '2026-08-15T12:00:00Z',
-            action: 'SNAPSHOT_INGESTION',
-            actor: 'System / Ingestion Worker',
-            details: 'Ingested Snapshot #001 (16 followers, 14 following).',
-            severity: 'INFO',
-          },
-          {
-            id: 'audit_02',
-            timestamp: '2026-09-01T14:30:00Z',
-            action: 'SNAPSHOT_DIFF',
-            actor: 'Snapshot Engine',
-            details: 'Compared Snapshot #001 with #002. Detected 3 new followers, 1 lost follower.',
-            severity: 'INFO',
-          },
-          {
-            id: 'audit_03',
-            timestamp: '2026-09-28T18:00:00Z',
-            action: 'SNAPSHOT_DIFF',
-            actor: 'Snapshot Engine',
-            details: 'Compared Snapshot #002 with #003. Identified @sam unfollowed, @elena became mutual.',
-            severity: 'INFO',
-          },
-        ],
-        preferences: getDefaultPreferences(),
-      };
-    }
 
     // User mode: load from localStorage as fast initial state
     const snapshotsRaw = localStorage.getItem(STORAGE_KEYS.USER_SNAPSHOTS);

@@ -32,19 +32,19 @@ export const HistoryEditorialView: React.FC<HistoryEditorialViewProps> = ({
       {/* Title & Metadata */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pb-4 sm:pb-6 border-b border-white/[0.08] min-w-0">
         <div className="min-w-0">
-          <div className="text-[11px] font-mono tracking-wider text-neutral-400 uppercase">
-            Activity History
+          <div className="text-[10px] font-mono tracking-widest text-[#8E909D] uppercase">
+            Activity Chronicle
           </div>
-          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight mt-1 truncate">
-            Follower History Log
+          <h2 className="text-2xl sm:text-4xl font-light text-white tracking-tight mt-1 truncate">
+            Relationship Event Log
           </h2>
-          <p className="text-xs text-neutral-400 mt-1">
-            Recorded follower changes, mutual connections, and snapshots.
+          <p className="text-xs text-[#8E909D] mt-1 font-normal">
+            Recorded follower transitions, mutual bonds, and archive checkpoints.
           </p>
         </div>
 
-        <span className="text-xs text-neutral-300 bg-white/[0.04] px-3.5 py-1.5 rounded-lg border border-white/[0.08] font-mono shrink-0">
-          {events.length} {events.length === 1 ? 'event' : 'events'} recorded
+        <span className="text-xs text-[#D1D3DC] bg-[#131418] px-3.5 py-1.5 rounded border border-white/[0.08] font-mono shrink-0">
+          {events.length} {events.length === 1 ? 'event' : 'events'} logged
         </span>
       </div>
 
@@ -66,20 +66,20 @@ export const HistoryEditorialView: React.FC<HistoryEditorialViewProps> = ({
           ).length;
 
           return (
-            <div key={dateStr} className="space-y-2.5 min-w-0">
+            <div key={dateStr} className="space-y-3 min-w-0">
               {/* Date Header */}
               <div className="flex items-center justify-between text-xs pb-1.5 border-b border-white/[0.08] min-w-0">
-                <span className="font-semibold text-white tracking-wide truncate">
+                <span className="font-mono text-xs font-semibold text-white tracking-wide truncate">
                   {dateStr}
                 </span>
-                <div className="flex items-center space-x-2 text-xs text-neutral-400 shrink-0 ml-2">
+                <div className="flex items-center space-x-2 text-xs font-mono shrink-0 ml-2">
                   {positiveCount > 0 && (
-                    <span className="text-emerald-400 font-mono">
+                    <span className="text-[#2A8F53]">
                       +{positiveCount}
                     </span>
                   )}
                   {negativeCount > 0 && (
-                    <span className="text-red-400 font-mono">
+                    <span className="text-[#D94444]">
                       -{negativeCount}
                     </span>
                   )}
@@ -87,7 +87,7 @@ export const HistoryEditorialView: React.FC<HistoryEditorialViewProps> = ({
               </div>
 
               {/* Event Rows */}
-              <div className="divide-y divide-white/[0.04] min-w-0">
+              <div className="divide-y divide-white/[0.06] min-w-0">
                 {dateEvents.map((evt, idx) => {
                   const targetUser = evt.subjectUsername;
                   const isLost = evt.eventType === 'LOST_FOLLOWER';
@@ -97,47 +97,42 @@ export const HistoryEditorialView: React.FC<HistoryEditorialViewProps> = ({
                   return (
                     <div
                       key={evt.id || idx}
-                      onClick={() => targetUser && onSelectProfile(targetUser)}
-                      className="py-2.5 px-2 flex items-center justify-between hover:bg-white/[0.03] transition cursor-pointer group rounded-lg min-w-0"
+                      onClick={() => targetUser && targetUser !== 'workspace' && onSelectProfile(targetUser)}
+                      className={`py-2.5 px-2 flex items-center justify-between gap-3 transition min-w-0 ${
+                        targetUser && targetUser !== 'workspace'
+                          ? 'cursor-pointer hover:bg-[#131418]'
+                          : 'cursor-default'
+                      }`}
                     >
-                      <div className="flex items-center space-x-2.5 truncate min-w-0 flex-1">
-                        <span
-                          className={`font-mono text-xs w-4 text-center font-bold shrink-0 ${
-                            isLost
-                              ? 'text-red-400'
-                              : isNew
-                              ? 'text-emerald-400'
-                              : isMutual
-                              ? 'text-white'
-                              : 'text-neutral-500'
+                      <div className="flex items-center space-x-3 min-w-0 flex-1">
+                        <div
+                          className={`w-2 h-2 rounded-full shrink-0 ${
+                            isNew || isMutual
+                              ? 'bg-[#2A8F53]'
+                              : isLost
+                              ? 'bg-[#D94444]'
+                              : 'bg-white/40'
                           }`}
-                        >
-                          {isLost ? '−' : isNew ? '+' : isMutual ? '↔' : '·'}
-                        </span>
-
-                        <div className="truncate min-w-0 flex-1">
-                          <div className="flex items-center space-x-2 text-xs truncate">
-                            {targetUser && (
-                              <span className="font-mono font-medium text-white group-hover:text-neutral-300 transition shrink-0">
-                                @{targetUser}
-                              </span>
-                            )}
-                            <span className="text-neutral-300 font-sans truncate">
-                              {evt.summary}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs text-white truncate font-medium">
+                            {evt.summary}
+                          </p>
+                          {targetUser && targetUser !== 'workspace' && (
+                            <span className="font-mono text-[11px] text-[#8E909D] truncate block">
+                              @{targetUser}
                             </span>
-                          </div>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 shrink-0 ml-2">
-                        <span className="text-[10px] font-mono text-neutral-500 uppercase hidden sm:inline">
-                          {evt.eventType}
+                      <div className="text-right shrink-0">
+                        <span className="text-[10px] font-mono text-[#565866]">
+                          {new Date(evt.detectedAt).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
                         </span>
-                        {targetUser && (
-                          <span className="text-xs font-mono text-neutral-500 group-hover:text-white transition">
-                            &rarr;
-                          </span>
-                        )}
                       </div>
                     </div>
                   );
@@ -146,13 +141,6 @@ export const HistoryEditorialView: React.FC<HistoryEditorialViewProps> = ({
             </div>
           );
         })}
-
-        {dateKeys.length === 0 && (
-          <div className="py-14 text-center text-xs text-neutral-400 space-y-1">
-            <p className="font-medium text-white">No history recorded yet.</p>
-            <p>Import a future snapshot to record activity changes.</p>
-          </div>
-        )}
       </div>
     </div>
   );
